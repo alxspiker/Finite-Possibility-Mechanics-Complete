@@ -38,7 +38,7 @@ from reportlab.lib.units import cm, mm
 from reportlab.lib.colors import HexColor, black, white, grey
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
 from reportlab.platypus import (
-    Paragraph, Spacer, PageBreak, Image,
+    Paragraph as ReportLabParagraph, Spacer, PageBreak, Image,
     Table, TableStyle, KeepTogether, NextPageTemplate, PageTemplate,
     Frame, BaseDocTemplate
 )
@@ -57,7 +57,7 @@ os.makedirs(BUILD_DIR, exist_ok=True)
 
 AUTHOR_NAME = "Alx Spiker"
 REPORT_DATE = "18 June 2026"
-VERSION = "v5.2  ·  Complete Unified Paper"
+VERSION = "v5.2 - Complete Unified Paper"
 
 # Load numerical results
 RESULTS_FALLBACK_PATH = '/home/z/my-project/work/FPM/Finite-Possibility-Mechanics-main/results.json'
@@ -79,6 +79,103 @@ BODY_BOLD = _register_font('TimesNewRoman-Bold', r'C:\Windows\Fonts\timesbd.ttf'
 BODY_ITALIC = _register_font('TimesNewRoman-Italic', r'C:\Windows\Fonts\timesi.ttf') or 'Times-Italic'
 HEAD_FONT = _register_font('Arial', r'C:\Windows\Fonts\arial.ttf') or 'Helvetica'
 HEAD_BOLD = _register_font('Arial-Bold', r'C:\Windows\Fonts\arialbd.ttf') or 'Helvetica-Bold'
+
+INLINE_SYMBOL_REPLACEMENTS = {
+    '&alpha;': 'alpha',
+    '&beta;': 'beta',
+    '&chi;': 'chi',
+    '&Delta;': 'Delta',
+    '&delta;': 'delta',
+    '&ell;': 'ell',
+    '&epsilon;': 'epsilon',
+    '&eta;': 'eta',
+    '&gamma;': 'gamma',
+    '&kappa;': 'kappa',
+    '&lambda;': 'lambda',
+    '&Lambda;': 'Lambda',
+    '&nu;': 'nu',
+    '&Omega;': 'Omega',
+    '&Phi;': 'Phi',
+    '&phi;': 'phi',
+    '&pi;': 'pi',
+    '&rho;': 'rho',
+    '&sigma;': 'sigma',
+    '&tau;': 'tau',
+    '&xi;': 'xi',
+    '&zeta;': 'zeta',
+    '&Zeta;': 'Z',
+    '&isin;': ' in ',
+    '&ge;': '>=',
+    '&le;': '<=',
+    '&ne;': '!=',
+    '&minus;': '-',
+    '&times;': 'x',
+    '&middot;': '*',
+    '&asymp;': 'approx.',
+    '&rarr;': '->',
+    '&rArr;': '=>',
+    '&infin;': 'infinity',
+    '&sum;': 'sum',
+    '&nabla;': 'grad',
+    '&partial;': 'partial',
+    '&int;': 'integral',
+    '&oint;': 'closed integral',
+    '&#8748;': 'closed integral',
+    '&otimes;': '(x)',
+    '&wedge;': 'wedge',
+    '&radic;': 'sqrt',
+    '&check;': 'OK',
+    '&lang;': '&lt;',
+    '&rang;': '&gt;',
+    '&#8450;': 'C',
+    '&#8469;': 'N',
+    '&#8477;': 'R',
+    '&#770;': '-hat',
+    '&#771;': '-tilde',
+    '&#775;': '-dot',
+    '&mdash;': '--',
+    '&lsquo;': "'",
+    '&rsquo;': "'",
+    '≤': '<=',
+    '≥': '>=',
+    '≠': '!=',
+    '∈': ' in ',
+    '∑': 'sum',
+    '∂': 'partial',
+    '∇': 'grad',
+    '∞': 'infinity',
+    '≈': 'approx.',
+    '→': '->',
+    '⇒': '=>',
+    '−': '-',
+    '×': 'x',
+    '·': '*',
+    '—': '--',
+    '–': '-',
+    'π': 'pi',
+    'τ': 'tau',
+    'α': 'alpha',
+    'β': 'beta',
+    'χ': 'chi',
+    'Δ': 'Delta',
+    'Ω': 'Omega',
+    'λ': 'lambda',
+    'γ': 'gamma',
+    'κ': 'kappa',
+    'ξ': 'xi',
+}
+
+
+def pdf_safe_markup(text):
+    if not isinstance(text, str):
+        return text
+    for src, dst in INLINE_SYMBOL_REPLACEMENTS.items():
+        text = text.replace(src, dst)
+    return text
+
+
+def Paragraph(text, style, *args, **kwargs):
+    return ReportLabParagraph(pdf_safe_markup(text), style, *args, **kwargs)
 
 # Color palette
 COL_PRIMARY = HexColor('#1a2a4a')
@@ -229,7 +326,7 @@ styles = make_styles()
 class PaperDoc(BaseDocTemplate):
     def __init__(self, filename, **kw):
         super().__init__(filename, **kw)
-        self.report_title = "FPM v5.2  ·  Complete Unified Paper"
+        self.report_title = "FPM v5.2 - Complete Unified Paper"
         self.allowSplitting = 1
         cover_frame = Frame(0, 0, A4[0], A4[1], id='cover',
                              leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
@@ -280,7 +377,7 @@ class PaperDoc(BaseDocTemplate):
         canv.restoreState()
 
     def afterFlowable(self, flowable):
-        if isinstance(flowable, Paragraph):
+        if isinstance(flowable, ReportLabParagraph):
             sn = flowable.style.name
             text = flowable.getPlainText()
             if sn in ('PartTitle', 'H1'):
@@ -351,6 +448,7 @@ def chart_img(path, width_cm=15.0, caption_text=None):
     return flow
 
 def make_table(data, col_widths=None, header_bg='#1a2a4a', font_size=9):
+    data = [[pdf_safe_markup(cell) if isinstance(cell, str) else cell for cell in row] for row in data]
     t = Table(data, colWidths=col_widths, repeatRows=1)
     t.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), HexColor(header_bg)),
@@ -397,7 +495,7 @@ def build_cover():
         ['Location', 'Edmonton, Alberta, Canada'],
         ['Document Type', 'Complete Unified Paper (single document)'],
         ['Contents', 'Interpretive framework + inline mathematical derivations'],
-        ['Methodology', '5 axioms  ·  21 derived quantities  ·  0 fitted constants'],
+        ['Methodology', '5 axioms - 21 derived quantities - 0 fitted constants'],
         ['Scope', 'Sub-atomic tick  ->  galactic dynamics  ->  CMB horizon'],
         ['Operational Ground Truth', 'AxCore thermodynamic cost function'],
         ['Verification', 'All derivations numerically verified'],
