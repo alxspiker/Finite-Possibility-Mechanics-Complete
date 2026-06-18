@@ -1080,7 +1080,8 @@ def build_part_iii():
         "(directed percolation threshold) and &Omega;<sub>max</sub> = 0.85 "
         "(Nyquist action sampling limit)."))
 
-    flow.append(Paragraph("<b>Derivation of &Omega;<sub>min</sub>.</b>", styles['Body']))
+    flow.append(Paragraph("<b>Derivation of Omega_min.</b>", styles['Body']))
+    flow.append(Spacer(1, 2))
     flow.append(derivation(
         "<b>Step 1: Percolation requirement.</b> By Axiom A1, the substrate "
         "is a Z<sup>3</sup> lattice. For the daemon field to maintain "
@@ -1103,7 +1104,8 @@ def build_part_iii():
         "<b>Result:</b> &Omega;<sub>min</sub> = p<sub>c</sub><sup>directed</sup> "
         "(3+1D) = 0.50. <b>Verified</b>: matches directed percolation theory."))
 
-    flow.append(Paragraph("<b>Derivation of &Omega;<sub>max</sub>.</b>", styles['Body']))
+    flow.append(Paragraph("<b>Derivation of Omega_max.</b>", styles['Body']))
+    flow.append(Spacer(1, 2))
     flow.append(derivation(
         "<b>Step 1: Nyquist sampling limit.</b> The discrete action principle "
         "(Axiom A2) on Z<sup>3</sup> with energy budget E<sub>max</sub> "
