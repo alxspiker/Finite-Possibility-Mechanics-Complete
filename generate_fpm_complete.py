@@ -44,12 +44,14 @@ from reportlab.platypus import (
 )
 from reportlab.platypus.tableofcontents import TableOfContents
 from reportlab.lib.sequencer import Sequencer
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
 # -----------------------------------------------------------------------------
 # Paths and constants
 # -----------------------------------------------------------------------------
-SCRIPT_DIR = '/home/z/my-project/scripts'
-BUILD_DIR = '/home/z/my-project/build'
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+BUILD_DIR = SCRIPT_DIR
 CHARTS_DIR = os.path.join(BUILD_DIR, 'unified_charts')
 os.makedirs(BUILD_DIR, exist_ok=True)
 
@@ -65,11 +67,18 @@ if os.path.exists(RESULTS_FALLBACK_PATH):
         RESULTS = json.load(f)
 
 # Fonts
-BODY_FONT = 'Times-Roman'
-BODY_BOLD = 'Times-Bold'
-BODY_ITALIC = 'Times-Italic'
-HEAD_FONT = 'Helvetica'
-HEAD_BOLD = 'Helvetica-Bold'
+def _register_font(name, path):
+    if os.path.exists(path):
+        pdfmetrics.registerFont(TTFont(name, path))
+        return name
+    return None
+
+
+BODY_FONT = _register_font('TimesNewRoman', r'C:\Windows\Fonts\times.ttf') or 'Times-Roman'
+BODY_BOLD = _register_font('TimesNewRoman-Bold', r'C:\Windows\Fonts\timesbd.ttf') or 'Times-Bold'
+BODY_ITALIC = _register_font('TimesNewRoman-Italic', r'C:\Windows\Fonts\timesi.ttf') or 'Times-Italic'
+HEAD_FONT = _register_font('Arial', r'C:\Windows\Fonts\arial.ttf') or 'Helvetica'
+HEAD_BOLD = _register_font('Arial-Bold', r'C:\Windows\Fonts\arialbd.ttf') or 'Helvetica-Bold'
 
 # Color palette
 COL_PRIMARY = HexColor('#1a2a4a')
@@ -590,7 +599,7 @@ def build_part_i():
     flow.append(Paragraph("2.1 Axiom A1: Finite Substrate", styles['H2']))
     flow.append(axiom(
         "<b>A1 (Finite Substrate).</b> The system operates on a discrete "
-        "&Zeta;<sup>3</sup> lattice with finite memory and finite energy budget "
+        "Z<sup>3</sup> lattice with finite memory and finite energy budget "
         "E<sub>max</sub>. Each lattice site holds a directed routing ledger "
         "<i>R</i><sub>ij</sub>(&times;) &isin; &#8477;<sup>3&times;3</sup> with "
         "i, j &isin; {x, y, z}. The state at tick t is the quintuple "
@@ -703,14 +712,14 @@ def build_part_ii():
     flow.append(Paragraph("3.1 The 9:1 Channel Split (Derived)", styles['H2']))
     flow.append(theorem(
         "<b>Theorem 1 (9:1 Channel Split).</b> The directed routing tensor "
-        "<i>R</i><sub>ij</sub> on &Zeta;<sup>3</sup> has 9 directed channels "
+        "<i>R</i><sub>ij</sub> on Z<sup>3</sup> has 9 directed channels "
         "and 1 scalar trace channel, giving the 9:1 ratio that fixes the "
         "mobility law exponents &alpha; = 1/5 and &beta; = 9/5."))
 
     flow.append(Paragraph("<b>Derivation.</b>", styles['Body']))
     flow.append(derivation(
         "<b>Step 1: Channel counting.</b> By Axiom A1, the substrate is a "
-        "&Zeta;<sup>3</sup> lattice with a directed routing ledger "
+        "Z<sup>3</sup> lattice with a directed routing ledger "
         "<i>R</i><sub>ij</sub>(&times;) &isin; &#8477;<sup>3&times;3</sup>, "
         "i, j &isin; {x, y, z}. The tensor has 3&times;3 = 9 entries, each "
         "representing a directed routing channel from direction i to direction "
@@ -803,7 +812,7 @@ def build_part_ii():
         "2-form), the system preserves global angular momentum while still "
         "allowing local non-commutative route-cost asymmetries. The torsion "
         "field generates no net torque on a closed surface because "
-        "&oint; A<sub>ij</sub> dS<sup>j</sup> = 0 for a pure gauge 2-form "
+        "the closed-surface integral of A<sub>ij</sub> dS<sup>j</sup> is 0 for a pure gauge 2-form "
         "(formal proof in Section 7.3).",
         styles['Body']))
 
@@ -813,12 +822,12 @@ def build_part_ii():
 
     flow.append(Paragraph("4.1 The Microscopic Route-Link Rule", styles['H2']))
     flow.append(Paragraph(
-        "Let the lattice spacing be &Delta;x and let &ee;<sub>i</sub> be the "
-        "three positive coordinate directions on &Zeta;<sup>3</sup>. Define "
+        "Let the lattice spacing be &Delta;x and let <i>e</i><sub>i</sub> be the "
+        "three positive coordinate directions on Z<sup>3</sup>. Define "
         "the local route cost C(&times;) = 1 &minus; &Omega;(&times;). For a "
-        "directed positive link from &times; to &times; + &Delta;x&ee;<sub>i</sub>, "
+        "directed positive link from &times; to &times; + &Delta;x<i>e</i><sub>i</sub>, "
         "define the midpoint <b>m</b><sub>i</sub><sup>+</sup>(&times;) = &times; "
-        "+ (&Delta;x/2)&ee;<sub>i</sub>, the unit radial vector "
+        "+ (&Delta;x/2)<i>e</i><sub>i</sub>, the unit radial vector "
         "n&#770;(<b>m</b>) = <b>m</b>/|<b>m</b>|, and the directed link cost:",
         styles['Body']))
     flow.extend(eq(
@@ -837,7 +846,7 @@ def build_part_ii():
         "function computes the cost of a single routing operation as:",
         styles['Body']))
     flow.append(Paragraph(
-        "<font face='Courier' size='2'>"
+        "<font face='Courier' size='7'>"
         "base_cost = 4.0 + (12.0 * deep_think_cost_bias)<br/>"
         "critic_penalty = (1.0 - clamp(fitness, 0.0, 1.0)) * 8.0<br/>"
         "strategy_bias = (strategy == \"cache_bundle\") ? 0.85 : 1.0<br/>"
@@ -886,9 +895,9 @@ def build_part_ii():
     flow.append(derivation(
         "<b>Step 1: Percolation threshold shift.</b> The directed routing "
         "asymmetry &chi;<sub>&rarr;</sub> controls the anisotropy of the "
-        "percolation cluster on &Zeta;<sup>3</sup>. At &chi;<sub>&rarr;</sub> = 0, "
+        "percolation cluster on Z<sup>3</sup>. At &chi;<sub>&rarr;</sub> = 0, "
         "percolation is isotropic with threshold p<sub>c</sub><sup>isotropic</sup> "
-        "&asymp; 0.2488 (site percolation on &Zeta;<sup>3</sup>). At "
+        "&asymp; 0.2488 (site percolation on Z<sup>3</sup>). At "
         "&chi;<sub>&rarr;</sub> = 1, percolation is fully directed with "
         "threshold p<sub>c</sub><sup>directed</sup> &asymp; 0.50 (directed "
         "percolation in 3+1D)."))
@@ -976,7 +985,7 @@ def build_part_iii():
     flow.append(Paragraph("<b>Derivation of &Omega;<sub>min</sub>.</b>", styles['Body']))
     flow.append(derivation(
         "<b>Step 1: Percolation requirement.</b> By Axiom A1, the substrate "
-        "is a &Zeta;<sup>3</sup> lattice. For the daemon field to maintain "
+        "is a Z<sup>3</sup> lattice. For the daemon field to maintain "
         "global causal connectivity, the routing network must be above the "
         "percolation threshold. Below threshold, the network fragments into "
         "disconnected clusters and route-cost information cannot propagate."))
@@ -999,7 +1008,7 @@ def build_part_iii():
     flow.append(Paragraph("<b>Derivation of &Omega;<sub>max</sub>.</b>", styles['Body']))
     flow.append(derivation(
         "<b>Step 1: Nyquist sampling limit.</b> The discrete action principle "
-        "(Axiom A2) on &Zeta;<sup>3</sup> with energy budget E<sub>max</sub> "
+        "(Axiom A2) on Z<sup>3</sup> with energy budget E<sub>max</sub> "
         "and minimum action L<sub>min</sub> can resolve at most "
         "N<sub>modes</sub> = E<sub>max</sub>/(2&middot;L<sub>min</sub>) "
         "independent action modes per budget cycle, by the Nyquist-Shannon "
@@ -1255,12 +1264,12 @@ def build_part_iv():
         "decomposition with A<sub>ij</sub> = &partial;<sub>i</sub>&phi;<sub>j</sub> "
         "&minus; &partial;<sub>j</sub>&phi;<sub>i</sub> (pure gauge), the "
         "antisymmetric part generates no net torque on a closed surface: "
-        "&oint; A<sub>ij</sub> dS<sup>j</sup> = 0."))
+        "the closed-surface integral of A<sub>ij</sub> dS<sup>j</sup> is 0."))
     flow.append(proof(
         "<b>Proof.</b> A pure gauge 2-form A<sub>ij</sub> = "
         "&partial;<sub>i</sub>&phi;<sub>j</sub> &minus; &partial;<sub>j</sub>&phi;<sub>i</sub> "
         "is exact: A = d&phi;. By Stokes&rsquo; theorem, "
-        "&oint;<sub>&part;V</sub> A = &int;<sub>V</sub> dA = "
+        "&#8748;<sub>&partial;V</sub> A = &int;<sub>V</sub> dA = "
         "&int;<sub>V</sub> d<sup>2</sup>&phi; = 0 (since d<sup>2</sup> = 0). "
         "<i>QED</i>"))
 
@@ -1290,7 +1299,7 @@ def build_part_iv():
         r"\frac{0.5}{80} = 0.00625"))
     flow.append(derivation(
         "<b>Step 3: Rounding to minimum-resolvable action.</b> The value "
-        "0.00625 is below the minimum-resolvable action on the &Zeta;<sup>3</sup> "
+        "0.00625 is below the minimum-resolvable action on the Z<sup>3</sup> "
         "lattice at the calibrated tick rate. The FPM framework rounds up to "
         "c<sub>0</sub> = 0.05, which is the smallest action that can be "
         "resolved over a single tick at the universal engine frequency "
@@ -1537,7 +1546,7 @@ def build_part_v():
                           styles['H1']))
     flow.append(theorem(
         "<b>Theorem 4 (Zero-Drag Isotropic Loop).</b> The minimum-action "
-        "state of the closed &Zeta;<sup>3</sup> grid at zero budget is the "
+        "state of the closed Z<sup>3</sup> grid at zero budget is the "
         "uniform isotropic condensate: R<sub>ij</sub> = &delta;<sub>ij</sub>&middot;&delta;, "
         "D<sub>0</sub> = 0, I<sub>0</sub> = 0, |&pi;<sub>0</sub> &minus; &tau;<sub>0</sub>| = 0, "
         "|&Delta;&Omega;<sub>0</sub>| = 0, with first executable action "
@@ -1546,7 +1555,7 @@ def build_part_v():
         "This is the Axiom of Minimal Initialization: at absolute "
         "initialization (t = 0), before any tick is executed and before the "
         "normalized energy budget is injected into the runtime ledger, the "
-        "closed &Zeta;<sup>3</sup> grid has no spendable execution budget. "
+        "closed Z<sup>3</sup> grid has no spendable execution budget. "
         "The state at this boundary is a pre-execution structural condition. "
         "The boot condensate is the framework&rsquo;s answer to the horizon "
         "problem: large-scale homogeneity is inherited from the "
@@ -1710,7 +1719,7 @@ def build_part_v():
         "where A<sub>4</sub>(n&#770;) = n<sub>x</sub><sup>4</sup> + "
         "n<sub>y</sub><sup>4</sup> + n<sub>z</sub><sup>4</sup> &minus; 3/5 "
         "is the unique fourth-order cubic-lattice anisotropy with zero "
-        "spherical mean, and &epsilon;<sub>4</sub>(R) = O((\Delta;x/R)<sup>2</sup>) "
+        "spherical mean, and &epsilon;<sub>4</sub>(R) = O((&Delta;x/R)<sup>2</sup>) "
         "is the residual anisotropy amplitude.",
         styles['Body']))
 
@@ -2561,9 +2570,7 @@ def build_part_x():
 # =============================================================================
 
 def build_document():
-    output_path = os.path.join(
-        BUILD_DIR, "FPM_v52_Complete_Unified.pdf"
-    )
+    output_path = os.path.join(BUILD_DIR, "FPM_Complete_Unified.pdf")
     doc = PaperDoc(
         output_path, pagesize=A4,
         leftMargin=2.0 * cm, rightMargin=2.0 * cm,
