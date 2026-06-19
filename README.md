@@ -4,6 +4,12 @@
 **Date:** 18 June 2026
 **Version:** v5.3 — Complete Unified Paper (single document)
 
+## Read the Paper
+
+[![Read the full FPM paper](https://img.shields.io/badge/Read%20the%20Full%20FPM%20Paper-PDF-1f4e79?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)](./FPM_Complete_Unified.pdf)
+
+The complete paper is [`FPM_Complete_Unified.pdf`](./FPM_Complete_Unified.pdf).
+
 ## What's in this package
 
 ```
