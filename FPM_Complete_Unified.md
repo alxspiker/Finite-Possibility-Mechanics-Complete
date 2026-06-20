@@ -1,16 +1,16 @@
-# Finite Possibility Mechanics v5.5
+﻿# Finite Possibility Mechanics v5.6
 ## The Complete Unified Paper
 
 **Alx Spiker · Edmonton, Alberta, Canada**
-**18 June 2026**
+**20 June 2026**
 
 ---
 
 ## Abstract
 
-Finite Possibility Mechanics (FPM) is a candidate mathematical framework that models any system processing information under finite resources. This **single self-contained paper** presents the framework in full: it states the five axioms, derives every constant inline (zero fitted parameters, zero asserted calibration factors), proves the six theorems, builds the six physical bridges, calibrates to fundamental constants, and validates the framework through twelve numerical experiments plus a starvation subtest.
+Finite Possibility Mechanics (FPM) is a candidate mathematical framework that models any system processing information under finite resources. This **single self-contained paper** presents the framework in full: it states the five axioms, derives every constant inline (zero fitted parameters, zero asserted calibration factors), proves the six theorems, builds the seven physical bridges, calibrates to fundamental constants, and validates the framework through fourteen numerical experiments plus a starvation subtest.
 
-The framework is organized as a single causal chain: five axioms generate a directed routing ledger, the ledger produces a viscosity field through a constitutive law, the viscosity field gates a per-tick Lagrangian whose closed energy ledger drives coherence dynamics, and the resulting theorems bridge to Landauer dissipation, emergent gravity, time dilation, particle mass, holographic cosmology, the CMB acoustic oscillator, and a calibrated sub-atomic tick — all sharing one runtime currency, **route cost**.
+The framework is organized as a single causal chain: five axioms generate a directed routing ledger, the ledger produces a viscosity field through a constitutive law, the viscosity field gates a per-tick Lagrangian whose closed energy ledger drives coherence dynamics, and the resulting theorems bridge to Landauer dissipation, emergent gravity, time dilation, particle mass, holographic cosmology, the CMB acoustic oscillator, Born-compatible microcell quantization, and a joint torsion Bell/CHSH audit — all sharing one runtime currency, **route cost**.
 
 ---
 
@@ -69,6 +69,7 @@ The framework is organized as a single causal chain: five axioms generate a dire
 - §22 Bridge 4: Time Dilation as Processor Lag
 - §23 Bridge 5: Holographic Horizon and CMB Oscillator
   - §23.7 Bridge 6: Born-Compatible Distribution Bridge
+  - §23.8 Bridge 7: Joint Torsion Bell/CHSH Bridge
   - 23.1 The Holographic Horizon Capacity
   - 23.2 The 16/3 Ledger Inertia Ratio (**derived inline**)
   - 23.3 The Stripped Boltzmann Oscillator
@@ -82,7 +83,7 @@ The framework is organized as a single causal chain: five axioms generate a dire
 - §26 Derivation of the AxCore-to-FPM Calibration Factor = 80 (**derived inline**)
 
 ### Part VIII: Numerical Validation
-- §27 Numerical Validation Summary (12 experiments plus 8b starvation subtest)
+- §27 Numerical Validation Summary (14 experiments plus 8b starvation subtest)
 
 ### Part IX: Master Chain & Open Frontiers
 - §28 The Master Chain Equation
@@ -155,7 +156,7 @@ VISCOSITY:  →  κ_t  →  Ω_t
 LAGRANGIAN: →  L_t = C^sem + C^geo + λ|ΔΩ_t|    (AxCore-derived)
 LEDGER:     →  E_{t+1} = clip(E_t - L_t + r, 0, E_max)
 STATE:      →  ψ_{i,t+1}=ψ_{i,t} exp(-iθL_{i,t})  →  (D_{t+1}, p_{t+1}, b_{t+1})
-BRIDGES:    →  {Lindblad, Landauer, Gravity, Time, CMB, Born}
+BRIDGES:    →  {Lindblad, Landauer, Gravity, Time, CMB, Born, Bell/CHSH}
 ```
 
 ---
@@ -169,7 +170,7 @@ BRIDGES:    →  {Lindblad, Landauer, Gravity, Time, CMB, Born}
 5. `fpm_results.json` — Generated simulator results
 6. `simulator_charts/` — Generated simulator PNGs
 7. `verify_derivations.py` — Verification script
-8. `generate_unified_charts.py` — Chart generator (10 figures)
+8. `generate_unified_charts.py` — Chart generator (11 figures)
 9. `unified_charts/` — Directory containing the 10 chart PNGs
 10. `README.md` — This file
 
@@ -182,4 +183,6 @@ BRIDGES:    →  {Lindblad, Landauer, Gravity, Time, CMB, Born}
 ---
 
 *Alx Spiker · Edmonton, Alberta, Canada*
-*FPM v5.5 · Complete Unified Paper · 18 June 2026*
+*FPM v5.6 · Complete Unified Paper · 20 June 2026*
+
+

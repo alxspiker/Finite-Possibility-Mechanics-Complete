@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-FPM v5.5 - The Complete Unified Paper (Single Document)
+FPM v5.6 - The Complete Unified Paper (Single Document)
 =========================================================
 A single self-contained paper that integrates:
   - The interpretive framework (what things mean)
@@ -56,8 +56,9 @@ CHARTS_DIR = os.path.join(BUILD_DIR, 'unified_charts')
 os.makedirs(BUILD_DIR, exist_ok=True)
 
 AUTHOR_NAME = "Alx Spiker"
-REPORT_DATE = "18 June 2026"
-VERSION = "v5.5 - Complete Unified Paper"
+REPORT_DATE = "20 June 2026"
+VERSION = "v5.6 - Complete Unified Paper"
+VERSION_TAG = VERSION.split()[0].replace('.', '')
 
 # Load numerical results
 RESULTS_FALLBACK_PATH = os.path.join(SCRIPT_DIR, 'fpm_results.json')
@@ -67,18 +68,57 @@ if os.path.exists(RESULTS_FALLBACK_PATH):
         RESULTS = json.load(f)
 
 # Fonts
-def _register_font(name, path):
-    if os.path.exists(path):
-        pdfmetrics.registerFont(TTFont(name, path))
-        return name
+def _first_existing(paths):
+    for path in paths:
+        if path and os.path.exists(path):
+            return path
     return None
 
 
-BODY_FONT = _register_font('TimesNewRoman', r'C:\Windows\Fonts\times.ttf') or 'Times-Roman'
-BODY_BOLD = _register_font('TimesNewRoman-Bold', r'C:\Windows\Fonts\timesbd.ttf') or 'Times-Bold'
-BODY_ITALIC = _register_font('TimesNewRoman-Italic', r'C:\Windows\Fonts\timesi.ttf') or 'Times-Italic'
-HEAD_FONT = _register_font('Arial', r'C:\Windows\Fonts\arial.ttf') or 'Helvetica'
-HEAD_BOLD = _register_font('Arial-Bold', r'C:\Windows\Fonts\arialbd.ttf') or 'Helvetica-Bold'
+def _register_font_from_candidates(name, candidates, fallback):
+    path = _first_existing(candidates)
+    if path:
+        pdfmetrics.registerFont(TTFont(name, path))
+        return name
+    return fallback
+
+
+LOCAL_FONTS = os.path.join(SCRIPT_DIR, 'fonts')
+BODY_FONT = _register_font_from_candidates('FPM-Serif', [
+    os.path.join(LOCAL_FONTS, 'times.ttf'),
+    r'C:\Windows\Fonts\times.ttf',
+    '/usr/share/fonts/truetype/msttcorefonts/Times_New_Roman.ttf',
+    '/usr/share/fonts/truetype/liberation2/LiberationSerif-Regular.ttf',
+    '/Library/Fonts/Times New Roman.ttf',
+], 'Times-Roman')
+BODY_BOLD = _register_font_from_candidates('FPM-Serif-Bold', [
+    os.path.join(LOCAL_FONTS, 'timesbd.ttf'),
+    r'C:\Windows\Fonts\timesbd.ttf',
+    '/usr/share/fonts/truetype/msttcorefonts/Times_New_Roman_Bold.ttf',
+    '/usr/share/fonts/truetype/liberation2/LiberationSerif-Bold.ttf',
+    '/Library/Fonts/Times New Roman Bold.ttf',
+], 'Times-Bold')
+BODY_ITALIC = _register_font_from_candidates('FPM-Serif-Italic', [
+    os.path.join(LOCAL_FONTS, 'timesi.ttf'),
+    r'C:\Windows\Fonts\timesi.ttf',
+    '/usr/share/fonts/truetype/msttcorefonts/Times_New_Roman_Italic.ttf',
+    '/usr/share/fonts/truetype/liberation2/LiberationSerif-Italic.ttf',
+    '/Library/Fonts/Times New Roman Italic.ttf',
+], 'Times-Italic')
+HEAD_FONT = _register_font_from_candidates('FPM-Sans', [
+    os.path.join(LOCAL_FONTS, 'arial.ttf'),
+    r'C:\Windows\Fonts\arial.ttf',
+    '/usr/share/fonts/truetype/msttcorefonts/Arial.ttf',
+    '/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf',
+    '/Library/Fonts/Arial.ttf',
+], 'Helvetica')
+HEAD_BOLD = _register_font_from_candidates('FPM-Sans-Bold', [
+    os.path.join(LOCAL_FONTS, 'arialbd.ttf'),
+    r'C:\Windows\Fonts\arialbd.ttf',
+    '/usr/share/fonts/truetype/msttcorefonts/Arial_Bold.ttf',
+    '/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf',
+    '/Library/Fonts/Arial Bold.ttf',
+], 'Helvetica-Bold')
 
 INLINE_SYMBOL_REPLACEMENTS = {
     '&alpha;': 'alpha',
@@ -203,6 +243,22 @@ COL_RESULT_FG = HexColor('#1a4a6a')
 # Equation rendering
 # -----------------------------------------------------------------------------
 MATH_CACHE = {}
+EQ_CACHE_DIR = os.path.join(BUILD_DIR, f'_eq_cache_{VERSION_TAG}')
+
+
+def purge_old_equation_caches() -> None:
+    for name in os.listdir(BUILD_DIR):
+        path = os.path.join(BUILD_DIR, name)
+        if name.startswith('_eq_cache_') and path != EQ_CACHE_DIR and os.path.isdir(path):
+            for root, dirs, files in os.walk(path, topdown=False):
+                for fname in files:
+                    os.remove(os.path.join(root, fname))
+                for dname in dirs:
+                    os.rmdir(os.path.join(root, dname))
+            os.rmdir(path)
+
+
+purge_old_equation_caches()
 
 def render_equation(latex_str, fontsize=12, color='#1a2a4a', dpi=200):
     if latex_str in MATH_CACHE:
@@ -220,10 +276,9 @@ def render_equation(latex_str, fontsize=12, color='#1a2a4a', dpi=200):
     target_w_cm = 14.0
     target_h_cm = target_w_cm * (h_px / w_px)
     target_h_cm = min(target_h_cm, 7.5)
-    cache_path = os.path.join(BUILD_DIR, '_eq_cache_v54')
-    os.makedirs(cache_path, exist_ok=True)
+    os.makedirs(EQ_CACHE_DIR, exist_ok=True)
     fname = hashlib.md5(latex_str.encode()).hexdigest() + '.png'
-    fpath = os.path.join(cache_path, fname)
+    fpath = os.path.join(EQ_CACHE_DIR, fname)
     img.save(fpath)
     MATH_CACHE[latex_str] = (fpath, target_w_cm, target_h_cm)
     return MATH_CACHE[latex_str]
@@ -326,7 +381,7 @@ styles = make_styles()
 class PaperDoc(BaseDocTemplate):
     def __init__(self, filename, **kw):
         super().__init__(filename, **kw)
-        self.report_title = "FPM v5.5 - Complete Unified Paper"
+        self.report_title = "FPM v5.6 - Complete Unified Paper"
         self.allowSplitting = 1
         cover_frame = Frame(0, 0, A4[0], A4[1], id='cover',
                              leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
@@ -547,8 +602,8 @@ def build_abstract():
         "This single self-contained paper presents the framework in full: it "
         "states the five axioms, derives every constant inline (zero fitted "
         "parameters, zero asserted calibration factors), proves the six theorems, "
-        "builds the six physical bridges, calibrates to fundamental constants, "
-        "and validates the framework through eleven numerical experiments plus "
+        "builds the seven physical bridges, calibrates to fundamental constants, "
+        "and validates the framework through fourteen numerical experiments plus "
         "a starvation subtest. The "
         "framework is organized as a single causal chain: five axioms generate "
         "a directed routing ledger, the ledger produces a viscosity field "
@@ -556,7 +611,8 @@ def build_abstract():
         "Lagrangian whose closed energy ledger drives coherence dynamics, and "
         "the resulting theorems bridge to Landauer dissipation, emergent "
         "gravity, time dilation, particle mass, holographic cosmology, the CMB "
-        "acoustic oscillator, and a calibrated sub-atomic tick &mdash; all sharing "
+        "acoustic oscillator, Born-compatible microcell quantization, and a "
+        "joint torsion Bell/CHSH bridge &mdash; all sharing "
         "one runtime currency, <i>route cost</i>. The AxCore operational "
         "implementation supplies the empirical ground truth for the thermodynamic "
         "cost formula, calibrated to FPM scale by a derived factor of 80. Every "
@@ -579,7 +635,8 @@ def build_abstract():
         "The framework is classified as a <b>phenomenological information-"
         "theoretic topology</b>: viable as an interpretive framework, productive "
         "as a source of falsifiable predictions, and honest about its divergences "
-        "from standard physics (Born bridge conditional on exchangeability, no Einstein field equations, energy "
+        "from standard physics (joint torsion measurement bridge still pending "
+        "independent physical validation, no Einstein field equations, energy "
         "as thermodynamic potential rather than Noether charge).",
         styles['AbstractBody']))
     flow.append(Spacer(1, 6))
@@ -701,7 +758,7 @@ def build_part_i():
         "Z<sup>3</sup> lattice with finite memory and finite energy budget "
         "E<sub>max</sub>. Each lattice site holds a directed routing ledger "
         "<i>R</i><sub>ij</sub>(&times;) &isin; &#8477;<sup>3&times;3</sup> with "
-        "i, j &isin; {x, y, z}. In v5.5 the native runtime state carries a "
+        "i, j &isin; {x, y, z}. In v5.6 the native runtime state carries a "
         "9-channel complex carrier &psi;<sub>i,t</sub> over the directed route "
         "channels, together with E<sub>t</sub>, b<sub>t</sub>, &tau;<sub>t</sub>, "
         "and &pi;<sub>t</sub>. The older scalar quantities p<sub>L,t</sub>, "
@@ -1416,7 +1473,7 @@ def build_part_iv():
     flow.append(Paragraph("7.4 Information Closure", styles['H2']))
     flow.append(theorem(
         "<b>Closure Principle 4 (Information Closure).</b> The route cost L<sub>t</sub> "
-        "is the single bookkeeping currency across all six physical bridges. "
+        "is the single bookkeeping currency across all seven physical bridges. "
         "No additional currency is introduced in any bridge."))
 
     # Section 8: Action floor derivation
@@ -1636,7 +1693,7 @@ def build_part_v():
         r"D_{t+1} \leq \kappa_t D_t + \xi_t, \quad \kappa_t \in [0,1], \quad \xi_t \geq 0"))
     flow.append(Paragraph(
         "Moreover, in a stationary regime the fixed-point dispersion "
-        "satisfies D* = &xi;*/(1 &minus; &kappa;*). In v5.5 this theorem is "
+        "satisfies D* = &xi;*/(1 &minus; &kappa;*). In v5.6 this theorem is "
         "read as a bridge-level diagnostic of the projected coherence "
         "observable c<sub>t</sub>; the native runtime carrier is &psi;.",
         styles['Body']))
@@ -1880,7 +1937,7 @@ def build_part_vi():
                           styles['PartSubtitle']))
 
     flow.append(Paragraph(
-        "Five bridges connect the FPM substrate to observable physics. Each "
+        "Seven bridges connect the FPM substrate to observable physics. Each "
         "bridge is a derived mapping from the route cost L<sub>t</sub> (or "
         "its descendants &Omega;<sub>t</sub>, &kappa;<sub>t</sub>, D<sub>t</sub>) "
         "to a physical quantity. No bridge introduces a new currency: every "
@@ -2202,12 +2259,72 @@ def build_part_vi():
         "ceil(log<sub>2</sub> N_bit-eq)c<sub>0</sub> = 1.55."))
     flow.append(result_box(
         "<b>Result:</b> The Born-compatible bridge is codified as a conditional "
-        "distribution mechanism. It does <i>not</i> prove that quantum "
-        "probability is non-fundamental. It supports the narrower claim: given "
-        "complex carrier, finite microcell counting, and no-label "
-        "exchangeability, P(i) approximates |&psi;<sub>i</sub>|<sup>2</sup>. "
+        "distribution mechanism for a single finite carrier. It supports the "
+        "claim that, under starvation-induced exchangeability, finite "
+        "microcell counting yields the Born distribution "
+        "P(i) &asymp; |&psi;<sub>i</sub>|<sup>2</sup>. "
         "Formal audit: max D<sub>TV</sub> &lt; 2&times;10<sup>-8</sup>, "
         "route-cost phase delta &lt; 10<sup>-12</sup>."))
+
+    flow.append(Paragraph("23.8 Bridge 7: Joint Torsion Bell/CHSH Bridge",
+                          styles['H2']))
+    flow.append(theorem(
+        "<b>Conditional Bridge Result (Joint Torsion Measurement).</b> Local "
+        "independent ZOMBIE quantization of two torsion-linked daemons is "
+        "Bell-classical and saturates S = 2. Joint largest-remainder "
+        "quantization across the shared pure-gauge torsion boundary produces "
+        "the singlet correlation E(a,b) = &minus;cos(a&minus;b) up to finite "
+        "microcell quantization, reaching the Tsirelson value "
+        "S = 2&radic;2." ))
+    flow.append(Paragraph(
+        "The v5.6 correction is the measurement rule for linked carriers. If "
+        "two daemons share a torsion loop A<sub>ij</sub><sup>(A)</sup> = "
+        "&minus;A<sub>ji</sub><sup>(B)</sup>, ZOMBIE mode does not quantize "
+        "the two local carriers independently. The starvation selector acts "
+        "on the shared boundary as one four-outcome joint microcell ledger:",
+        styles['Body']))
+    flow.extend(eq(
+        r"P_{++}=P_{--}=\frac{1-\cos(a-b)}{4},\qquad "
+        r"P_{+-}=P_{-+}=\frac{1+\cos(a-b)}{4}"))
+    flow.extend(eq(
+        r"n_{\alpha\beta}=\mathrm{LRM}(N_{\mathrm{bit\text{-}eq}}P_{\alpha\beta}),\qquad "
+        r"E_{\mathrm{FPM}}(a,b)=P_{++}-P_{+-}-P_{-+}+P_{--}"))
+    flow.append(derivation(
+        "<b>Local baseline.</b> If the torsion link is treated as a pre-shared "
+        "classical phase and the two wings quantize independently, the "
+        "correlation is the Bell-classical triangle wave "
+        "E<sub>local</sub>(&delta;) = &minus;1 + 2&delta;/&pi;, giving "
+        "CHSH S = 2.000000. This is the local-hidden-variable failure mode."))
+    flow.append(derivation(
+        "<b>Joint boundary resolution.</b> If the starvation selector resolves "
+        "the shared torsion boundary as one joint ledger, the four microcell "
+        "counts above give E<sub>FPM</sub>(&delta;) &asymp; &minus;cos&delta;. "
+        "The simulator audit gives S<sub>joint</sub> = 2.828427, matching "
+        "2&radic;2 to finite microcell precision."))
+    flow.append(derivation(
+        "<b>Runtime integration.</b> In v5.6 the master-chain loop treats "
+        "torsion links as active routing objects. If either daemon in a linked "
+        "pair enters ZOMBIE mode, the linked partner is pulled into the same "
+        "joint boundary ledger before local microcell quantization can occur. "
+        "The runtime audit confirms that linked starvation executes joint "
+        "torsion LRM rather than independent local collapse."))
+    flow.extend(chart_img(os.path.join(CHARTS_DIR, '09_bell_chsh.png'),
+                          width_cm=16.0,
+                          caption_text="Figure 10. v5.6 Bell/CHSH audit. Left: local "
+                                       "torsion quantization is Bell-classical, while "
+                                       "joint torsion LRM tracks the singlet cosine "
+                                       "correlation. Right: the joint torsion bridge "
+                                       "reaches the Tsirelson bound S = 2.828427."))
+    flow.append(result_box(
+        "<b>Result:</b> The v5.6 simulator distinguishes the local torsion "
+        "failure mode from the joint torsion measurement rule. The joint rule "
+        "passes the CHSH audit as a candidate finite-substrate entanglement "
+        "mechanism. This is a simulator-level bridge result pending independent "
+        "physical validation; the runtime engine now elevates the torsion link "
+        "from a diagnostic into an active measurement object. The next extension "
+        "is to carry the same "
+        "joint-boundary rule from CHSH measurement settings into general "
+        "multi-particle Hamiltonian evolution." ))
 
     return flow
 
@@ -2264,7 +2381,7 @@ def build_part_vii():
         "verified to machine precision."))
     flow.extend(chart_img(os.path.join(CHARTS_DIR, '08_calibration_bridge.png'),
                           width_cm=16.0,
-                          caption_text="Figure 10. The calibration bridge: from sub-atomic "
+                          caption_text="Figure 11. The calibration bridge: from sub-atomic "
                                        "tick (micro) through galactic dynamics (meso) to CMB "
                                        "horizon (macro)."))
 
@@ -2385,7 +2502,7 @@ def build_part_viii():
 
     flow.append(Paragraph("27. Numerical Validation Summary", styles['H1']))
     flow.append(Paragraph(
-        "Twelve numerical experiments plus the 8b starvation subtest validate "
+        "Fourteen numerical experiments plus the 8b starvation subtest validate "
         "the framework&rsquo;s core mechanisms. Each experiment tests a single "
         "mechanism in isolation, with explicit pass/fail criteria defined a priori.",
         styles['Body']))
@@ -2432,6 +2549,12 @@ def build_part_viii():
         ('12', 'Born distribution bridge', 'max D_TV',
          '< 2e-8',
          'PASS'),
+        ('13', 'Joint torsion Bell/CHSH', 'S_joint',
+         '2.828427',
+         'PASS'),
+        ('14', 'Runtime torsion link', 'linked pull',
+         '1',
+         'PASS'),
     ]
     for row in exp_data:
         exp_rows.append(list(row))
@@ -2439,7 +2562,7 @@ def build_part_viii():
     flow.append(make_table(exp_rows,
                            col_widths=[0.8*cm, 4.0*cm, 3.5*cm, 3.5*cm, 3.2*cm],
                            font_size=8.5))
-    flow.append(Paragraph("Table 2. Summary of numerical validation. Twelve primary "
+    flow.append(Paragraph("Table 2. Summary of numerical validation. Fourteen primary "
                           "experiments plus the 8b starvation subtest; all internal "
                           "criteria pass, while Experiment 10 is the SPARC R2 audit "
                           "and is not yet competitive with fixed RAR/MOND.",
@@ -2496,7 +2619,7 @@ def build_part_ix():
     flow.extend(eq(
         r"\to \mathrm{carrier:}\;\psi_{i,t+1}=\psi_{i,t}e^{-i\theta L_{i,t}} \to "
         r"\mathrm{state:}\;(D_{t+1}, p_{t+1}, b_{t+1}) \to "
-        r"\mathrm{bridges:}\;\{\mathrm{Lindblad,\ Landauer,\ Gravity,\ Time,\ CMB,\ Born}\}",
+        r"\mathrm{bridges:}\;\{\mathrm{Lindblad,\ Landauer,\ Gravity,\ Time,\ CMB,\ Born,\ Bell/CHSH}\}",
         fontsize=10.5))
     flow.append(Paragraph(
         "This is the framework&rsquo;s master chain. Every variable on the "
@@ -2516,7 +2639,7 @@ def build_part_ix():
          'Landauer debit saturates; no hidden recovery'],
         ['Angular momentum', 'Closed integral A_{ij} dS^j = 0',
          'Torsion pure gauge; Noether preserved'],
-        ['Information', 'All 6 bridges are functions of L_t',
+        ['Information', 'All 7 bridges are functions of L_t',
          'Single bookkeeping currency across all sectors'],
     ]
     flow.append(make_table(closure_table,
@@ -2571,13 +2694,13 @@ def build_part_ix():
     # Section 30: Final Verdict
     flow.append(Paragraph("30. Final Verdict", styles['H1']))
     flow.append(Paragraph(
-        "Finite Possibility Mechanics v5.5 is a candidate mathematical "
+        "Finite Possibility Mechanics v5.6 is a candidate mathematical "
         "framework that models the dynamics of any system processing "
         "information under finite resources. This single self-contained "
         "paper has presented the framework&rsquo;s five axioms, derived every "
         "constant inline (zero fitted parameters), proven its theorems, "
-        "built the six physical bridges, calibrated to fundamental "
-        "constants, and tested the framework through eleven numerical "
+        "built the seven physical bridges, calibrated to fundamental "
+        "constants, and tested the framework through fourteen numerical "
         "experiments plus a starvation subtest.",
         styles['Body']))
 
@@ -2604,10 +2727,12 @@ def build_part_ix():
         "productive as a source of falsifiable predictions: the finite "
         "redshift ceiling &gamma;<sub>max</sub> = 31.87, the R2-extended "
         "split-source galaxy source functional, the CMB source spectrum "
-        "with derived visibility. It is <b>not</b> a fundamental physical "
-        "theory: it cannot replace quantum mechanics (Born bridge conditional "
-        "on exchangeability rather than a complete measurement theory), cannot "
-        "replace general relativity (acoustic metric rather than Einstein "
+        "with derived visibility. It is <b>not yet</b> a completed fundamental "
+        "physical theory: the v5.6 Born and joint torsion Bell/CHSH bridges "
+        "provide a candidate finite-substrate measurement mechanism, but still "
+        "require independent physical validation beyond simulator-level CHSH "
+        "closure; the framework cannot yet replace general relativity (acoustic "
+        "metric rather than Einstein "
         "field equations by postulate), and cannot derive all its "
         "load-bearing constants from first principles (the AxCore "
         "operational constants 4.0, 12.0, 8.0, 0.85, 0.5, 0.80, 0.90, 0.50, "
@@ -2618,7 +2743,7 @@ def build_part_ix():
     flow.append(callout(
         "<b>Final assessment:</b> The framework&rsquo;s value lies in its "
         "interpretive power and its falsifiable predictions, both of which "
-        "are on clearer mathematical footing after the v5.5 Born-bridge codification. "
+        "are on clearer mathematical footing after the v5.6 joint torsion Bell/CHSH audit. "
         "Its empirical fate now depends on the next independent validations: "
         "CMB post-marginalization, the Sgr A* S2 redshift test, and an "
         "R2-extended derivation of the split-source source functional "
@@ -2626,8 +2751,8 @@ def build_part_ix():
         "competitiveness, the framework will have earned its place as a "
         "serious phenomenological alternative to standard dark-matter "
         "cosmology. If they show empirical disfavoring, the framework&rsquo;s "
-        "fundamental divergences from quantum mechanics will have been "
-        "confirmed as empirically costly."))
+        "fundamental divergences from standard empirical baselines will have "
+        "been confirmed as costly."))
 
     flow.append(Paragraph(
         "The deepest contribution of the framework is conceptual: the "
@@ -2745,7 +2870,7 @@ def build_part_x():
     ]
     flow.append(make_table(sym_rows, col_widths=[4.5*cm, 6.5*cm, 4.0*cm],
                            font_size=8.5))
-    flow.append(Paragraph("Table 5. Master symbol reference for FPM v5.5.",
+    flow.append(Paragraph("Table 5. Master symbol reference for FPM v5.6.",
                           styles['Caption']))
 
     # Appendix C: Verification Summary
@@ -2787,9 +2912,9 @@ def build_document():
         output_path, pagesize=A4,
         leftMargin=2.0 * cm, rightMargin=2.0 * cm,
         topMargin=2.5 * cm, bottomMargin=2.5 * cm,
-        title="Finite Possibility Mechanics v5.5: The Complete Unified Paper",
+        title="Finite Possibility Mechanics v5.6: The Complete Unified Paper",
         author=AUTHOR_NAME,
-        subject="FPM v5.5: Complete Unified Paper with inline derivations",
+        subject="FPM v5.6: Complete Unified Paper with inline derivations",
     )
 
     story = []

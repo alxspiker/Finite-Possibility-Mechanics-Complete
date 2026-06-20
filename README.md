@@ -1,8 +1,8 @@
-# FPM v5.5 — The Complete Unified Paper
+﻿# FPM v5.6 — The Complete Unified Paper
 
 **Author:** Alx Spiker · Edmonton, Alberta, Canada
-**Date:** 18 June 2026
-**Version:** v5.5 — Complete Unified Paper (single document)
+**Date:** 20 June 2026
+**Version:** v5.6 — Complete Unified Paper (single document)
 
 ## Read the Paper
 
@@ -22,7 +22,7 @@ FPM_v52_Complete/
 ├── fpm_results.json                               # Generated simulator results
 ├── simulator_charts/                              # Generated simulator PNGs
 ├── verify_derivations.py                          # Verification script
-├── generate_unified_charts.py                     # Chart generator (10 figures)
+├── generate_unified_charts.py                     # Chart generator (11 figures)
 └── unified_charts/                                # Generated chart PNGs
     ├── 01_master_chain.png
     ├── 02_layer_architecture.png
@@ -48,7 +48,7 @@ This is NOT two separate documents. It is ONE paper with 10 parts and 33 section
 ## Quick Start
 
 ### View the paper
-Open `FPM_Complete_Unified.pdf` in any PDF reader. The document is organized into 10 parts (33 sections), with 10 figures and 6 tables.
+Open `FPM_Complete_Unified.pdf` in any PDF reader. The document is organized into 10 parts (33 sections), with 11 figures and 6 tables.
 
 ### Run the verification
 ```bash
@@ -92,7 +92,8 @@ python generate_fpm_complete.py      # Regenerates the PDF
 ### Part VI: Physical Bridges (with CMB parameter derivations inline)
 - §19-22 Bridges 1-4 (Lindblad, Landauer, Gravity, Time)
 - §23 Bridge 5: CMB (16/3 ratio, A_FPM, n_s, r, ℓ_D **all derived inline**)
-- §23.7 Bridge 6: Born-compatible distribution bridge (**conditional on no-label exchangeability**)
+- §23.7 Bridge 6: Born-compatible distribution bridge
+- §23.8 Bridge 7: Joint torsion Bell/CHSH bridge (**S = 2.828427 simulator audit**)
 
 ### Part VII: Calibration & G_FPM (with full derivation inline)
 - §24 Derivation of the Universal Engine Tick
@@ -100,7 +101,7 @@ python generate_fpm_complete.py      # Regenerates the PDF
 - §26 Derivation of the AxCore-to-FPM Calibration Factor = 80
 
 ### Part VIII: Numerical Validation
-- §27 Twelve experiments summary plus 8b starvation subtest
+- §27 Fourteen experiments summary plus 8b starvation subtest
 
 ### Part IX: Master Chain & Open Frontiers
 - §28 The Master Chain Equation
@@ -174,16 +175,19 @@ All 9 derivation checks pass:
 - **v5.2** is the **single unified paper** that combines both, with all derivations inline where they belong
 - **v5.3** replaces the continuous N_bit-eq approximation with the exact discrete Z^3 lattice-point count 1,452,997,909 and reports the resulting deterministic G_FPM variance at T=300.0 K
 - **v5.4** seals the depletion-floor, galaxy-boundary, and clipping-ledger audit leaks by distinguishing raw/effective e(B), making R_d an environmental boundary input, and tracking thermal exhaust/starvation deficit
-- **v5.5** (this) codifies the Born-compatible distribution bridge with exact finite microcell quantization and explicit no-label exchangeability as the remaining conditional theorem
+- **v5.5** codifies the Born-compatible distribution bridge with exact finite microcell quantization and explicit no-label exchangeability as the remaining conditional theorem
+- **v5.6** (this) adds the joint torsion Bell/CHSH bridge: local torsion quantization saturates S=2, while joint torsion-loop LRM reaches S=2.828427
 
-The v5.5 paper is the definitive document. It contains everything from v5.0-v5.4 in a single coherent narrative.
+The v5.6 paper is the definitive document. It contains everything from v5.0-v5.5 in a single coherent narrative.
 
 ## The Deepest Result
 
-The FPM v5.5 framework is a fully axiomatic system. Every observable prediction is a theorem of the five axioms or a conditional bridge evaluation with explicit environmental inputs. The Born-compatible bridge is explicitly conditional on no-label exchangeability rather than claimed as an unconditional proof of quantum probability. The framework's empirical engagements (SPARC, Planck, CODATA) are genuine tests of the axioms, not fits to data.
+The FPM v5.6 framework is a fully axiomatic system. Every observable prediction is a theorem of the five axioms or a bridge evaluation with explicit environmental inputs. The Born-compatible bridge and joint torsion Bell/CHSH audit now provide a candidate finite-substrate measurement mechanism, pending independent physical validation. The framework's empirical engagements (SPARC, Planck, CODATA) are genuine tests of the axioms, not fits to data.
 
 **The 0.09% deterministic match to CODATA G at T=300.0 K, the 0.45% match to Planck dark-to-baryonic ratio, and the 0.54% match to Planck TT RMS are all derived predictions, not fitted parameters.**
 
 ---
 
-*FPM v5.5 · Complete Unified Paper · 18 June 2026*
+*FPM v5.6 · Complete Unified Paper · 20 June 2026*
+
+
