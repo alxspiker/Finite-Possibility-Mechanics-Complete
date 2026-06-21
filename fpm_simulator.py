@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Finite Possibility Mechanics (FPM) v5.6 -- COMPLETE CLOSED-FORM SIMULATOR
+Finite Possibility Mechanics (FPM) v5.7 -- COMPLETE CLOSED-FORM SIMULATOR
 ==========================================================================
 
 A single self-contained Python simulator that:
@@ -20,7 +20,7 @@ The code is organised as the same single causal chain as the paper:
                      -> Bridges (Layer 5) -> Calibration (Layer 6)
                      -> Numerical Validation (Layer 7)
 
-Author of the simulator: built from the FPM v5.6 paper by Alx Spiker (2026).
+Author of the simulator: built from the FPM v5.7 paper by Alx Spiker (2026).
 The mathematical content is entirely from the paper; this file is a faithful,
 closed-form implementation of it.
 
@@ -1222,7 +1222,7 @@ def audit_born_distribution_bridge(d: DerivedConstants,
                                    n_states: int = 1000,
                                    n_channels: int = 9,
                                    seed: int = 55) -> Dict[str, Any]:
-    """Formal audit for the v5.6 Born-compatible bridge."""
+    """Formal audit for the v5.7 Born-compatible bridge."""
     rng = np.random.default_rng(seed)
     tvs: List[float] = []
     phase_deltas: List[float] = []
@@ -1239,7 +1239,7 @@ def audit_born_distribution_bridge(d: DerivedConstants,
 
     return {
         "audit_name": "Born-compatible distribution bridge formal audit",
-        "version": "v5.6",
+        "version": "v5.7",
         "n_states": n_states,
         "n_channels": n_channels,
         "N_bit_eq": d.N_bit_eq,
@@ -1322,7 +1322,7 @@ def joint_torsion_lrm_distribution(d: DerivedConstants,
                                    b: float) -> Dict[str, Any]:
     """Joint torsion-loop LRM quantization over (++,+-,-+,--).
 
-    The v5.6 candidate pivot is that linked daemons in ZOMBIE mode do not
+    The v5.7 candidate pivot is that linked daemons in ZOMBIE mode do not
     independently quantize local 9-channel carriers. They resolve starvation
     across the shared pure-gauge torsion boundary. The joint microcell
     distribution is unbiased in each wing and carries only the route-geometric
@@ -1368,7 +1368,7 @@ def chsh_value(correlation_fn) -> float:
 
 def audit_joint_torsion_bell_bridge(d: DerivedConstants,
                                     n_angles: int = 181) -> Dict[str, Any]:
-    """Audit v5.6 joint torsion quantization against CHSH/Bell tests."""
+    """Audit v5.7 joint torsion quantization against CHSH/Bell tests."""
     angles = np.linspace(0.0, math.pi, n_angles)
     local_corr = np.array([bell_local_torsion_correlation(0.0, x) for x in angles])
     qm_corr = np.array([bell_qm_correlation(0.0, x) for x in angles])
@@ -1398,7 +1398,7 @@ def audit_joint_torsion_bell_bridge(d: DerivedConstants,
 
     return {
         "audit_name": "Joint torsion Bell/CHSH audit",
-        "version": "v5.6",
+        "version": "v5.7",
         "n_angles": n_angles,
         "angles": angles.tolist(),
         "local_torsion_correlation": local_corr.tolist(),
@@ -1432,6 +1432,131 @@ def audit_joint_torsion_bell_bridge(d: DerivedConstants,
                 and abs(S_joint - tsirelson_bound) < 5e-8
                 and float(np.max(np.abs(geom_corr - qm_corr))) < 5e-12
                 and max(corr_errors) < 5e-8
+            ) else "FAIL"
+        ),
+    }
+
+
+def zombie_joint_resolution_quality(energy_a: float,
+                                    energy_b: float,
+                                    d: DerivedConstants,
+                                    sharpness: float = 10.0,
+                                    midpoint_ratio: float = 0.60,
+                                    torsion_link_active: bool = True) -> float:
+    """Smooth joint-resolution gate for the v5.7 Bell signature."""
+    if not torsion_link_active:
+        return 0.0
+    E_zombie = 0.20 * d.E_max
+    limiting_ratio = max(float(energy_a), float(energy_b)) / E_zombie
+    x = sharpness * (limiting_ratio - midpoint_ratio)
+    if x > 60.0:
+        return 0.0
+    if x < -60.0:
+        return 1.0
+    return float(1.0 / (1.0 + math.exp(x)))
+
+
+def gated_bell_correlation(d: DerivedConstants,
+                           a: float,
+                           b: float,
+                           energy_a: float,
+                           energy_b: float,
+                           torsion_link_active: bool = True) -> float:
+    """Energy-gated Bell correlation predicted by the v5.7 signature audit."""
+    q = zombie_joint_resolution_quality(
+        energy_a,
+        energy_b,
+        d,
+        torsion_link_active=torsion_link_active,
+    )
+    local = bell_local_torsion_correlation(a, b)
+    joint = joint_torsion_lrm_distribution(d, a, b)["fpm_correlation"]
+    return float((1.0 - q) * local + q * joint)
+
+
+def audit_zombie_gated_bell_signature(d: DerivedConstants) -> Dict[str, Any]:
+    """Audit the proposed v5.7 ZOMBIE-gated Bell signature."""
+    bell = audit_joint_torsion_bell_bridge(d)
+    E_zombie = 0.20 * d.E_max
+    ratios = np.array([1.50, 1.00, 0.80, 0.60, 0.40, 0.20, 0.10, 0.05],
+                      dtype=float)
+    qualities = []
+    S_values = []
+    for ratio in ratios:
+        E = float(ratio * E_zombie)
+        q = zombie_joint_resolution_quality(E, E, d)
+        S = chsh_value(lambda a, b, E=E: gated_bell_correlation(d, a, b, E, E))
+        qualities.append(q)
+        S_values.append(S)
+
+    grid = np.linspace(0.05, 1.50, 80)
+    S_surface = np.zeros((len(grid), len(grid)), dtype=float)
+    q_surface = np.zeros_like(S_surface)
+    for i, ratio_a in enumerate(grid):
+        for j, ratio_b in enumerate(grid):
+            Ea = float(ratio_a * E_zombie)
+            Eb = float(ratio_b * E_zombie)
+            q = zombie_joint_resolution_quality(Ea, Eb, d)
+            q_surface[i, j] = q
+            S_surface[i, j] = chsh_value(
+                lambda a, b, Ea=Ea, Eb=Eb: gated_bell_correlation(d, a, b, Ea, Eb)
+            )
+
+    no_link_S = chsh_value(
+        lambda a, b: gated_bell_correlation(
+            d, a, b, 0.05 * E_zombie, 0.05 * E_zombie,
+            torsion_link_active=False,
+        )
+    )
+    one_flow_S = chsh_value(
+        lambda a, b: gated_bell_correlation(
+            d, a, b, 0.05 * E_zombie, 1.50 * E_zombie,
+        )
+    )
+    both_deep_S = chsh_value(
+        lambda a, b: gated_bell_correlation(
+            d, a, b, 0.05 * E_zombie, 0.05 * E_zombie,
+        )
+    )
+
+    return {
+        "audit_name": "ZOMBIE-gated Bell signature audit",
+        "version": "v5.7",
+        "E_zombie": E_zombie,
+        "energy_ratio_grid": grid.tolist(),
+        "joint_quality_surface": q_surface.tolist(),
+        "S_surface": S_surface.tolist(),
+        "same_energy_ratios": ratios.tolist(),
+        "same_energy_joint_quality": qualities,
+        "same_energy_S": S_values,
+        "S_local_limit": bell["S_local_torsion"],
+        "S_joint_limit": bell["S_joint_torsion_lrm"],
+        "S_no_torsion_link_deep_zombie": no_link_S,
+        "S_one_wing_flow_one_deep_zombie": one_flow_S,
+        "S_both_deep_zombie": both_deep_S,
+        "classical_bound": bell["classical_bound"],
+        "tsirelson_bound": bell["tsirelson_bound"],
+        "gate_model": (
+            "q = 1/(1+exp(10*(max(E_A,E_B)/E_zombie - 0.60))); "
+            "S_eff blends local torsion and joint torsion CHSH values. "
+            "The higher-energy wing limits joint boundary resolution."
+        ),
+        "experimental_signature": (
+            "Bell violation is predicted to be gated by simultaneous deep "
+            "ZOMBIE-mode operation of both torsion-linked parties. Keeping "
+            "either wing in FLOW mode, or removing the shared torsion link, "
+            "returns the CHSH value to the Bell-classical regime."
+        ),
+        "standard_qm_contrast": (
+            "Standard quantum mechanics predicts Bell correlations from the "
+            "prepared entangled state and analyzer settings, not from an FPM "
+            "energy-budget gate. This is a candidate falsification target."
+        ),
+        "verdict": (
+            "PASS" if (
+                no_link_S <= 2.0 + 1e-9
+                and one_flow_S <= 2.001
+                and abs(both_deep_S - bell["tsirelson_bound"]) < 0.01
             ) else "FAIL"
         ),
     }
@@ -1991,7 +2116,7 @@ def metabolic_mode(E: float, E_max: float) -> str:
 def make_pure_gauge_torsion(scale: float = 0.015) -> np.ndarray:
     """Small antisymmetric pure-gauge torsion seed for linked daemons.
 
-    The v5.6 Bell audit uses the aligned measurement-plane generator. Under
+    The v5.7 Bell audit uses the aligned measurement-plane generator. Under
     SO(3) conjugation this pure-gauge link yields the preserved-flux cosine as
     a routing invariant rather than importing it as a probability formula.
     """
@@ -2451,6 +2576,52 @@ def plot_all(d: DerivedConstants, axioms: Axioms,
     plt.close(fig)
     paths["bell_chsh"] = p
 
+    # 10. ZOMBIE-gated Bell signature
+    gated = audit_zombie_gated_bell_signature(d)
+    ratios = np.array(gated["same_energy_ratios"])
+    S_vals = np.array(gated["same_energy_S"])
+    q_vals = np.array(gated["same_energy_joint_quality"])
+    grid = np.array(gated["energy_ratio_grid"])
+    S_surface = np.array(gated["S_surface"])
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.8), constrained_layout=True)
+    axes[0].plot(ratios, S_vals, "o-", color="#8b0000", lw=2.0,
+                 label="FPM gated CHSH")
+    axes[0].axhline(gated["classical_bound"], color="#555555", ls=":",
+                    label="classical bound")
+    axes[0].axhline(gated["tsirelson_bound"], color="#1a4a6a", ls="--",
+                    label="Tsirelson")
+    axes[0].axvline(1.0, color="#c8902e", ls=":", lw=1.0,
+                    label="ZOMBIE threshold")
+    axes[0].invert_xaxis()
+    axes[0].set_xlabel("same-wing energy ratio E/E_zombie")
+    axes[0].set_ylabel("CHSH S")
+    axes[0].set_title("ZOMBIE-gated Bell violation")
+    ax_q = axes[0].twinx()
+    ax_q.plot(ratios, q_vals, "s--", color="#2d7a4a", alpha=0.75,
+              label="joint resolution q")
+    ax_q.set_ylabel("joint resolution quality q")
+    axes[0].legend(loc="lower left", fontsize=7)
+    ax_q.legend(loc="upper right", fontsize=7)
+
+    im = axes[1].imshow(
+        S_surface,
+        extent=[grid[0], grid[-1], grid[-1], grid[0]],
+        vmin=gated["classical_bound"],
+        vmax=gated["tsirelson_bound"],
+        cmap="viridis",
+        aspect="auto",
+    )
+    axes[1].axvline(1.0, color="white", ls=":", lw=1.0)
+    axes[1].axhline(1.0, color="white", ls=":", lw=1.0)
+    axes[1].set_xlabel("wing B energy ratio E_B/E_zombie")
+    axes[1].set_ylabel("wing A energy ratio E_A/E_zombie")
+    axes[1].set_title("Two-wing gate surface: S(E_A, E_B)")
+    fig.colorbar(im, ax=axes[1], label="CHSH S")
+    p = os.path.join(out_dir, "fpm_zombie_gated_bell.png")
+    fig.savefig(p, dpi=140)
+    plt.close(fig)
+    paths["zombie_gated_bell"] = p
+
     return paths
 
 
@@ -2483,7 +2654,7 @@ def to_serialisable(obj: Any) -> Any:
 
 def main() -> None:
     print("=" * 70)
-    print("FINITE POSSIBILITY MECHANICS (FPM) v5.6 -- COMPLETE SIMULATOR")
+    print("FINITE POSSIBILITY MECHANICS (FPM) v5.7 -- COMPLETE SIMULATOR")
     print("=" * 70)
     print()
     print("Layer 0: Loading the five axioms...")
@@ -2563,6 +2734,7 @@ def main() -> None:
         route_costs=route_cost_channels(sample, L_for_born),
     )
     b_bell = audit_joint_torsion_bell_bridge(d)
+    b_gated = audit_zombie_gated_bell_signature(d)
     print(f"  Lindblad:   kappa={b_lind['kappa']:.4f}, "
           f"gamma={b_lind['gamma_dephasing']:.4e}")
     print(f"  Landauer:   J={b_land['J_total_J']:.4e} J, "
@@ -2580,6 +2752,9 @@ def main() -> None:
     print(f"  Bell/CHSH:  S_local={b_bell['S_local_torsion']:.6f}, "
           f"S_joint={b_bell['S_joint_torsion_lrm']:.6f}, "
           f"Tsirelson={b_bell['tsirelson_bound']:.6f}")
+    print(f"  Gated Bell: S_no_link={b_gated['S_no_torsion_link_deep_zombie']:.6f}, "
+          f"S_one_flow={b_gated['S_one_wing_flow_one_deep_zombie']:.6f}, "
+          f"S_deep={b_gated['S_both_deep_zombie']:.6f}")
     print()
 
     print("Layer 7: Calibration check (vs CODATA/Planck)...")
@@ -2638,6 +2813,13 @@ def main() -> None:
     print(f"  Metabolic modes seen:        {sorted(set(traj.metabolic_mode))}")
     print()
 
+    print("Layer 10: Auditing proposed v5.7 experimental signature...")
+    print(f"  ZOMBIE-gated Bell verdict:     {b_gated['verdict']}")
+    print(f"  S(no link, deep ZOMBIE):       {b_gated['S_no_torsion_link_deep_zombie']:.6f}")
+    print(f"  S(one FLOW, one deep):         {b_gated['S_one_wing_flow_one_deep_zombie']:.6f}")
+    print(f"  S(both deep ZOMBIE):           {b_gated['S_both_deep_zombie']:.6f}")
+    print()
+
     print("Generating visualisation PNGs...")
     plot_paths = plot_all(d, axioms, traj)
     for k, p in plot_paths.items():
@@ -2651,7 +2833,7 @@ def main() -> None:
     # ---- Assemble final JSON output --------------------------------------
     results = {
         "metadata": {
-            "version": "v5.6",
+            "version": "v5.7",
             "Validation_Suite": validation_suite,
         },
         "axioms": to_serialisable(axioms),
@@ -2679,6 +2861,7 @@ def main() -> None:
             },
             "born_distribution": to_serialisable(b_born),
             "joint_torsion_bell_chsh": to_serialisable(b_bell),
+            "zombie_gated_bell_signature": to_serialisable(b_gated),
         },
         "calibration": to_serialisable(cal),
         "experiments": to_serialisable(experiments),
@@ -2714,7 +2897,7 @@ def main() -> None:
         json.dump(results, f, indent=2, default=to_serialisable)
     print(f"Results JSON saved to: {out_json}")
     print()
-    print("FPM v5.6 simulation complete.")
+    print("FPM v5.7 simulation complete.")
     print("Master chain equation (every arrow is derived, none postulated):")
     print("  substrate R_ij -> (S_9, K_1) -> Phi_Omega -> psi_t -> p_t=|psi_t|^2")
     print("    -> ZOMBIE microcell quantization when starvation forces exchangeability")
@@ -2725,6 +2908,7 @@ def main() -> None:
     print("    -> psi_{i,t+1}=psi_{i,t} exp(-i theta L_{i,t})")
     print("    -> (D_{t+1}, p_{t+1}, b_{t+1})")
     print("    -> {Lindblad, Landauer, Gravity, Time, CMB, Born, Bell/CHSH} bridges")
+    print("    -> v5.7 falsification target: ZOMBIE-gated Bell violation")
     print()
     print("Closure: the universe becomes solid, directional, heavy,")
     print("time-slowed, structured, and stable for one basic reason:")

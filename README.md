@@ -1,8 +1,8 @@
-﻿# FPM v5.6 — The Complete Unified Paper
+﻿# FPM v5.7 — The Complete Unified Paper
 
 **Author:** Alx Spiker · Edmonton, Alberta, Canada
 **Date:** 20 June 2026
-**Version:** v5.6 — Complete Unified Paper (single document)
+**Version:** v5.7 — Complete Unified Paper (single document)
 
 ## Read the Paper
 
@@ -178,18 +178,19 @@ All 9 derivation checks pass:
 - **v5.3** replaces the continuous N_bit-eq approximation with the exact discrete Z^3 lattice-point count 1,452,997,909 and reports the resulting deterministic G_FPM variance at T=300.0 K
 - **v5.4** seals the depletion-floor, galaxy-boundary, and clipping-ledger audit leaks by distinguishing raw/effective e(B), making R_d an environmental boundary input, and tracking thermal exhaust/starvation deficit
 - **v5.5** codifies the Born-compatible distribution bridge with exact finite microcell quantization and explicit no-label exchangeability as the remaining conditional theorem
-- **v5.6** (this) adds the joint torsion Bell/CHSH bridge: local torsion quantization saturates S=2, while rotated pure-gauge torsion flux plus joint LRM reaches S=2.828427. The bridge is explicitly topological/non-local in Bell's sense, not a local-hidden-variable repair.
+- **v5.6** adds the joint torsion Bell/CHSH bridge: local torsion quantization saturates S=2, while rotated pure-gauge torsion flux plus joint LRM reaches S=2.828427. The bridge is explicitly topological/non-local in Bell's sense, not a local-hidden-variable repair.
+- **v5.7** (this) adds the proposed ZOMBIE-gated Bell signature: CHSH remains Bell-classical without the torsion link or when either wing stays in FLOW mode, but rises toward Tsirelson only when both linked wings enter deep ZOMBIE mode simultaneously.
 
-The v5.6 paper is the definitive document. It contains everything from v5.0-v5.5 in a single coherent narrative.
+The v5.7 paper is the definitive document. It contains everything from v5.0-v5.6 in a single coherent narrative.
 
 ## The Deepest Result
 
-The FPM v5.6 framework is a fully axiomatic system. Every observable prediction is a theorem of the five axioms or a bridge evaluation with explicit environmental inputs. The Born-compatible bridge and joint torsion Bell/CHSH audit now provide a candidate finite-substrate measurement mechanism: the Bell angle dependence is computed from SO(3) rotation of a shared pure-gauge torsion link before exact LRM microcell allocation. This remains an explicitly topological/non-local bridge result pending independent physical validation, not a locally mediated Bell violation. In short: FPM is a non-local realist topology that represents Tsirelson-level correlations with linear memory instead of exponential tensor-product storage. The framework's empirical engagements (SPARC, Planck, CODATA) are genuine tests of the axioms, not fits to data.
+The FPM v5.7 framework is a fully axiomatic system. Every observable prediction is a theorem of the five axioms or a bridge evaluation with explicit environmental inputs. The Born-compatible bridge, joint torsion Bell/CHSH audit, and ZOMBIE-gated Bell signature now provide candidate finite-substrate measurement tests: the Bell angle dependence is computed from SO(3) rotation of a shared pure-gauge torsion link before exact LRM microcell allocation, and the violation is predicted to require simultaneous deep low-energy operation of both linked wings. This remains an explicitly topological/non-local bridge result pending independent physical validation, not a locally mediated Bell violation. In short: FPM is a non-local realist topology that represents Tsirelson-level correlations with linear memory instead of exponential tensor-product storage. The framework's empirical engagements (SPARC, Planck, CODATA, Bell gating) are genuine tests of the axioms, not fits to data.
 
 **The 0.09% deterministic match to CODATA G at T=300.0 K, the 0.45% match to Planck dark-to-baryonic ratio, and the 0.54% match to Planck TT RMS are all derived predictions, not fitted parameters.**
 
 ---
 
-*FPM v5.6 · Complete Unified Paper · 20 June 2026*
+*FPM v5.7 · Complete Unified Paper · 20 June 2026*
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-FPM v5.6 - The Complete Unified Paper (Single Document)
+FPM v5.7 - The Complete Unified Paper (Single Document)
 =========================================================
 A single self-contained paper that integrates:
   - The interpretive framework (what things mean)
@@ -53,11 +53,12 @@ from reportlab.pdfbase.ttfonts import TTFont
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BUILD_DIR = SCRIPT_DIR
 CHARTS_DIR = os.path.join(BUILD_DIR, 'unified_charts')
+SIM_CHARTS_DIR = os.path.join(BUILD_DIR, 'simulator_charts')
 os.makedirs(BUILD_DIR, exist_ok=True)
 
 AUTHOR_NAME = "Alx Spiker"
 REPORT_DATE = "20 June 2026"
-VERSION = "v5.6 - Complete Unified Paper"
+VERSION = "v5.7 - Complete Unified Paper"
 VERSION_TAG = VERSION.split()[0].replace('.', '')
 
 # Load numerical results
@@ -381,7 +382,7 @@ styles = make_styles()
 class PaperDoc(BaseDocTemplate):
     def __init__(self, filename, **kw):
         super().__init__(filename, **kw)
-        self.report_title = "FPM v5.6 - Complete Unified Paper"
+        self.report_title = "FPM v5.7 - Complete Unified Paper"
         self.allowSplitting = 1
         cover_frame = Frame(0, 0, A4[0], A4[1], id='cover',
                              leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
@@ -617,7 +618,11 @@ def build_abstract():
         "Bell bridge is not local in Bell's sense: the strong correlations "
         "arise from joint largest-remainder quantization across pre-established "
         "shared boundary conditions whose resolution depends on the relative "
-        "analyzer settings of the linked pair. All bridges share "
+        "analyzer settings of the linked pair. Version 5.7 adds a proposed "
+        "falsifiable signature: Bell violation is predicted to be gated by "
+        "simultaneous deep low-energy ZOMBIE operation of both linked wings, "
+        "while a missing torsion link or one FLOW-mode wing returns the CHSH "
+        "value to the Bell-classical regime. All bridges share "
         "one runtime currency, <i>route cost</i>. The AxCore operational "
         "implementation supplies the empirical ground truth for the thermodynamic "
         "cost formula, calibrated to FPM scale by a derived factor of 80. Every "
@@ -781,7 +786,7 @@ def build_part_i():
         "Z<sup>3</sup> lattice with finite memory and finite energy budget "
         "E<sub>max</sub>. Each lattice site holds a directed routing ledger "
         "<i>R</i><sub>ij</sub>(&times;) &isin; &#8477;<sup>3&times;3</sup> with "
-        "i, j &isin; {x, y, z}. In v5.6 the native runtime state carries a "
+        "i, j &isin; {x, y, z}. In v5.7 the native runtime state carries a "
         "9-channel complex carrier &psi;<sub>i,t</sub> over the directed route "
         "channels, together with E<sub>t</sub>, b<sub>t</sub>, &tau;<sub>t</sub>, "
         "and &pi;<sub>t</sub>. The older scalar quantities p<sub>L,t</sub>, "
@@ -1716,7 +1721,7 @@ def build_part_v():
         r"D_{t+1} \leq \kappa_t D_t + \xi_t, \quad \kappa_t \in [0,1], \quad \xi_t \geq 0"))
     flow.append(Paragraph(
         "Moreover, in a stationary regime the fixed-point dispersion "
-        "satisfies D* = &xi;*/(1 &minus; &kappa;*). In v5.6 this theorem is "
+        "satisfies D* = &xi;*/(1 &minus; &kappa;*). In v5.7 this theorem is "
         "read as a bridge-level diagnostic of the projected coherence "
         "observable c<sub>t</sub>; the native runtime carrier is &psi;.",
         styles['Body']))
@@ -2300,7 +2305,8 @@ def build_part_vi():
         "computed from the rotated torsion flux, not imported as a quantum "
         "probability formula." ))
     flow.append(Paragraph(
-        "The v5.6 correction is the measurement rule for linked carriers. If "
+        "The v5.7 measurement rule for linked carriers is conditional and "
+        "runtime-gated. If "
         "two daemons share a torsion loop A<sub>ij</sub><sup>(A)</sup> = "
         "&minus;A<sub>ji</sub><sup>(B)</sup>, ZOMBIE mode does not quantize "
         "the two local carriers independently. The starvation selector acts "
@@ -2340,7 +2346,7 @@ def build_part_vi():
         "of the correlation, not a locally mediated Bell violation. The "
         "non-locality is owned, not hidden."))
     flow.append(derivation(
-        "<b>Runtime integration.</b> In v5.6 the master-chain loop treats "
+        "<b>Runtime integration.</b> In v5.7 the master-chain loop treats "
         "torsion links as active routing objects. If either daemon in a linked "
         "pair enters ZOMBIE mode, the linked partner is pulled into the same "
         "joint boundary ledger before local microcell quantization can occur. "
@@ -2354,8 +2360,58 @@ def build_part_vi():
                                        "correlation before LRM quantization. Right: "
                                        "the joint torsion bridge reaches the "
                                        "Tsirelson bound S = 2.828427."))
+    gated = RESULTS.get('bridges', {}).get('zombie_gated_bell_signature', {})
+    flow.append(Paragraph("23.9 Proposed Experimental Signature: ZOMBIE-Gated Bell Violation",
+                          styles['H2']))
+    flow.append(theorem(
+        "<b>Proposed Falsification Target.</b> FPM predicts that the clean "
+        "joint torsion Bell violation is gated by simultaneous deep ZOMBIE "
+        "operation of both linked parties. If the shared pure-gauge torsion "
+        "boundary is absent, or if either wing remains in the high-energy "
+        "FLOW regime, the CHSH value remains Bell-classical. When both linked "
+        "wings are driven deep below the ZOMBIE threshold, the effective CHSH "
+        "value rises toward 2 sqrt(2)." ))
+    flow.append(Paragraph(
+        "The v5.7 simulator models the joint-boundary resolution quality as "
+        "a smooth finite-resource gate controlled by the higher-energy wing:",
+        styles['Body']))
+    flow.extend(eq(
+        r"q(E_A,E_B)=\frac{1}{1+\exp\{10[\max(E_A,E_B)/E_{\rm zombie}-0.60]\}},\qquad "
+        r"E_{\rm zombie}=0.20E_{\max}"))
+    flow.extend(eq(
+        r"S_{\rm eff}(E_A,E_B)=S_{\rm local}+q(E_A,E_B)\,[S_{\rm joint}-S_{\rm local}]"))
+    flow.append(derivation(
+        "<b>Interpretation.</b> The higher-energy wing limits the shared "
+        "boundary resolution because an unstarved daemon can still resolve "
+        "locally. The signature is therefore not a distortion of the angular "
+        "cosine curve; in deep ZOMBIE mode the angular dependence remains "
+        "within finite microcell precision of -cos(delta). The proposed "
+        "observable is the energy-budget gate itself." ))
+    flow.append(derivation(
+        "<b>Contrast with standard quantum mechanics.</b> Standard quantum "
+        "mechanics predicts Bell correlations from the prepared entangled "
+        "state and analyzer settings. It does not include an FPM-style "
+        "resource-budget switch that collapses CHSH to the Bell-classical "
+        "regime when one wing remains in FLOW mode. This makes the gate a "
+        "qualitative, falsifiable candidate signature rather than a fitted "
+        "calibration parameter." ))
+    flow.extend(chart_img(os.path.join(SIM_CHARTS_DIR, 'fpm_zombie_gated_bell.png'),
+                          width_cm=16.0,
+                          caption_text="Figure 11. Proposed ZOMBIE-gated Bell signature. "
+                                       "Left: CHSH rises from the classical bound toward "
+                                       "Tsirelson only as both linked daemons enter deep "
+                                       "ZOMBIE mode. Right: the two-wing surface shows that "
+                                       "one FLOW wing suppresses the joint violation."))
+    if gated:
+        flow.append(result_box(
+            "<b>v5.7 audit:</b> "
+            f"S(no torsion link, deep ZOMBIE) = {gated.get('S_no_torsion_link_deep_zombie', 2.0):.6f}; "
+            f"S(one FLOW wing, one deep ZOMBIE) = {gated.get('S_one_wing_flow_one_deep_zombie', 2.0):.6f}; "
+            f"S(both deep ZOMBIE) = {gated.get('S_both_deep_zombie', 2.828):.6f}. "
+            "This is a proposed experimental signature pending independent "
+            "physical implementation, not an established laboratory result." ))
     flow.append(result_box(
-        "<b>Result:</b> The v5.6 simulator distinguishes the local torsion "
+        "<b>Result:</b> The v5.7 simulator distinguishes the local torsion "
         "failure mode from the joint torsion measurement rule. The joint rule "
         "passes the CHSH audit as a candidate finite-substrate entanglement "
         "mechanism. This is a simulator-level bridge result pending independent "
@@ -2420,7 +2476,7 @@ def build_part_vii():
         "verified to machine precision."))
     flow.extend(chart_img(os.path.join(CHARTS_DIR, '08_calibration_bridge.png'),
                           width_cm=16.0,
-                          caption_text="Figure 11. The calibration bridge: from sub-atomic "
+                          caption_text="Figure 12. The calibration bridge: from sub-atomic "
                                        "tick (micro) through galactic dynamics (meso) to CMB "
                                        "horizon (macro)."))
 
@@ -2733,7 +2789,7 @@ def build_part_ix():
     # Section 30: Final Verdict
     flow.append(Paragraph("30. Final Verdict", styles['H1']))
     flow.append(Paragraph(
-        "Finite Possibility Mechanics v5.6 is a candidate mathematical "
+        "Finite Possibility Mechanics v5.7 is a candidate mathematical "
         "framework that models the dynamics of any system processing "
         "information under finite resources. This single self-contained "
         "paper has presented the framework&rsquo;s five axioms, derived every "
@@ -2767,7 +2823,7 @@ def build_part_ix():
         "redshift ceiling &gamma;<sub>max</sub> = 31.87, the R2-extended "
         "split-source galaxy source functional, the CMB source spectrum "
         "with derived visibility. It is <b>not yet</b> a completed fundamental "
-        "physical theory: the v5.6 Born and joint torsion Bell/CHSH bridges "
+        "physical theory: the v5.7 Born and joint torsion Bell/CHSH bridges "
         "provide a candidate finite-substrate measurement mechanism, but still "
         "require independent physical validation beyond simulator-level CHSH "
         "closure; the framework cannot yet replace general relativity (acoustic "
@@ -2782,7 +2838,8 @@ def build_part_ix():
     flow.append(callout(
         "<b>Final assessment:</b> The framework&rsquo;s value lies in its "
         "interpretive power and its falsifiable predictions, both of which "
-        "are on clearer mathematical footing after the v5.6 joint torsion Bell/CHSH audit. "
+        "are on clearer mathematical footing after the v5.7 joint torsion Bell/CHSH audit "
+        "and the ZOMBIE-gated Bell signature audit. "
         "Its empirical fate now depends on the next independent validations: "
         "CMB post-marginalization, the Sgr A* S2 redshift test, and an "
         "R2-extended derivation of the split-source source functional "
@@ -2909,7 +2966,7 @@ def build_part_x():
     ]
     flow.append(make_table(sym_rows, col_widths=[4.5*cm, 6.5*cm, 4.0*cm],
                            font_size=8.5))
-    flow.append(Paragraph("Table 5. Master symbol reference for FPM v5.6.",
+    flow.append(Paragraph("Table 5. Master symbol reference for FPM v5.7.",
                           styles['Caption']))
 
     # Appendix C: Verification Summary
@@ -2951,9 +3008,9 @@ def build_document():
         output_path, pagesize=A4,
         leftMargin=2.0 * cm, rightMargin=2.0 * cm,
         topMargin=2.5 * cm, bottomMargin=2.5 * cm,
-        title="Finite Possibility Mechanics v5.6: The Complete Unified Paper",
+        title="Finite Possibility Mechanics v5.7: The Complete Unified Paper",
         author=AUTHOR_NAME,
-        subject="FPM v5.6: Complete Unified Paper with inline derivations",
+        subject="FPM v5.7: Complete Unified Paper with inline derivations",
     )
 
     story = []
