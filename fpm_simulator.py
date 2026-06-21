@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Finite Possibility Mechanics (FPM) v5.7 -- COMPLETE CLOSED-FORM SIMULATOR
-==========================================================================
+Finite Possibility Mechanics (FPM) -- COMPLETE CLOSED-FORM SIMULATOR
+====================================================================
 
 A single self-contained Python simulator that:
   * takes the five FPM axioms as the ONLY inputs,
@@ -20,7 +20,7 @@ The code is organised as the same single causal chain as the paper:
                      -> Bridges (Layer 5) -> Calibration (Layer 6)
                      -> Numerical Validation (Layer 7)
 
-Author of the simulator: built from the FPM v5.7 paper by Alx Spiker (2026).
+Author of the simulator: built from the FPM paper by Alx Spiker.
 The mathematical content is entirely from the paper; this file is a faithful,
 closed-form implementation of it.
 
@@ -62,6 +62,8 @@ import matplotlib.pyplot as plt
 plt.rcParams["font.sans-serif"] = ["DejaVu Sans"]
 plt.rcParams["axes.unicode_minus"] = False
 plt.rcParams["figure.dpi"] = 110
+
+FPM_VERSION = "v5.7"
 
 # Physical constants (CODATA / SI)
 HBAR = 1.054571817e-34       # J*s
@@ -1222,7 +1224,7 @@ def audit_born_distribution_bridge(d: DerivedConstants,
                                    n_states: int = 1000,
                                    n_channels: int = 9,
                                    seed: int = 55) -> Dict[str, Any]:
-    """Formal audit for the v5.7 Born-compatible bridge."""
+    """Formal audit for the Born-compatible bridge."""
     rng = np.random.default_rng(seed)
     tvs: List[float] = []
     phase_deltas: List[float] = []
@@ -1239,7 +1241,7 @@ def audit_born_distribution_bridge(d: DerivedConstants,
 
     return {
         "audit_name": "Born-compatible distribution bridge formal audit",
-        "version": "v5.7",
+        "version": FPM_VERSION,
         "n_states": n_states,
         "n_channels": n_channels,
         "N_bit_eq": d.N_bit_eq,
@@ -1322,7 +1324,7 @@ def joint_torsion_lrm_distribution(d: DerivedConstants,
                                    b: float) -> Dict[str, Any]:
     """Joint torsion-loop LRM quantization over (++,+-,-+,--).
 
-    The v5.7 candidate pivot is that linked daemons in ZOMBIE mode do not
+    The candidate pivot is that linked daemons in ZOMBIE mode do not
     independently quantize local 9-channel carriers. They resolve starvation
     across the shared pure-gauge torsion boundary. The joint microcell
     distribution is unbiased in each wing and carries only the route-geometric
@@ -1368,7 +1370,7 @@ def chsh_value(correlation_fn) -> float:
 
 def audit_joint_torsion_bell_bridge(d: DerivedConstants,
                                     n_angles: int = 181) -> Dict[str, Any]:
-    """Audit v5.7 joint torsion quantization against CHSH/Bell tests."""
+    """Audit joint torsion quantization against CHSH/Bell tests."""
     angles = np.linspace(0.0, math.pi, n_angles)
     local_corr = np.array([bell_local_torsion_correlation(0.0, x) for x in angles])
     qm_corr = np.array([bell_qm_correlation(0.0, x) for x in angles])
@@ -1398,7 +1400,7 @@ def audit_joint_torsion_bell_bridge(d: DerivedConstants,
 
     return {
         "audit_name": "Joint torsion Bell/CHSH audit",
-        "version": "v5.7",
+        "version": FPM_VERSION,
         "n_angles": n_angles,
         "angles": angles.tolist(),
         "local_torsion_correlation": local_corr.tolist(),
@@ -1443,7 +1445,7 @@ def zombie_joint_resolution_quality(energy_a: float,
                                     sharpness: float = 10.0,
                                     midpoint_ratio: float = 0.60,
                                     torsion_link_active: bool = True) -> float:
-    """Smooth joint-resolution gate for the v5.7 Bell signature."""
+    """Smooth joint-resolution gate for the ZOMBIE-gated Bell signature."""
     if not torsion_link_active:
         return 0.0
     E_zombie = 0.20 * d.E_max
@@ -1462,7 +1464,7 @@ def gated_bell_correlation(d: DerivedConstants,
                            energy_a: float,
                            energy_b: float,
                            torsion_link_active: bool = True) -> float:
-    """Energy-gated Bell correlation predicted by the v5.7 signature audit."""
+    """Energy-gated Bell correlation predicted by the signature audit."""
     q = zombie_joint_resolution_quality(
         energy_a,
         energy_b,
@@ -1475,7 +1477,7 @@ def gated_bell_correlation(d: DerivedConstants,
 
 
 def audit_zombie_gated_bell_signature(d: DerivedConstants) -> Dict[str, Any]:
-    """Audit the proposed v5.7 ZOMBIE-gated Bell signature."""
+    """Audit the proposed ZOMBIE-gated Bell signature."""
     bell = audit_joint_torsion_bell_bridge(d)
     E_zombie = 0.20 * d.E_max
     ratios = np.array([1.50, 1.00, 0.80, 0.60, 0.40, 0.20, 0.10, 0.05],
@@ -1521,7 +1523,7 @@ def audit_zombie_gated_bell_signature(d: DerivedConstants) -> Dict[str, Any]:
 
     return {
         "audit_name": "ZOMBIE-gated Bell signature audit",
-        "version": "v5.7",
+        "version": FPM_VERSION,
         "E_zombie": E_zombie,
         "energy_ratio_grid": grid.tolist(),
         "joint_quality_surface": q_surface.tolist(),
@@ -2116,7 +2118,7 @@ def metabolic_mode(E: float, E_max: float) -> str:
 def make_pure_gauge_torsion(scale: float = 0.015) -> np.ndarray:
     """Small antisymmetric pure-gauge torsion seed for linked daemons.
 
-    The v5.7 Bell audit uses the aligned measurement-plane generator. Under
+    The Bell audit uses the aligned measurement-plane generator. Under
     SO(3) conjugation this pure-gauge link yields the preserved-flux cosine as
     a routing invariant rather than importing it as a probability formula.
     """
@@ -2654,7 +2656,7 @@ def to_serialisable(obj: Any) -> Any:
 
 def main() -> None:
     print("=" * 70)
-    print("FINITE POSSIBILITY MECHANICS (FPM) v5.7 -- COMPLETE SIMULATOR")
+    print(f"FINITE POSSIBILITY MECHANICS (FPM) {FPM_VERSION} -- COMPLETE SIMULATOR")
     print("=" * 70)
     print()
     print("Layer 0: Loading the five axioms...")
@@ -2813,7 +2815,7 @@ def main() -> None:
     print(f"  Metabolic modes seen:        {sorted(set(traj.metabolic_mode))}")
     print()
 
-    print("Layer 10: Auditing proposed v5.7 experimental signature...")
+    print("Layer 10: Auditing proposed experimental signature...")
     print(f"  ZOMBIE-gated Bell verdict:     {b_gated['verdict']}")
     print(f"  S(no link, deep ZOMBIE):       {b_gated['S_no_torsion_link_deep_zombie']:.6f}")
     print(f"  S(one FLOW, one deep):         {b_gated['S_one_wing_flow_one_deep_zombie']:.6f}")
@@ -2833,7 +2835,7 @@ def main() -> None:
     # ---- Assemble final JSON output --------------------------------------
     results = {
         "metadata": {
-            "version": "v5.7",
+            "version": FPM_VERSION,
             "Validation_Suite": validation_suite,
         },
         "axioms": to_serialisable(axioms),
@@ -2897,7 +2899,7 @@ def main() -> None:
         json.dump(results, f, indent=2, default=to_serialisable)
     print(f"Results JSON saved to: {out_json}")
     print()
-    print("FPM v5.7 simulation complete.")
+    print(f"FPM {FPM_VERSION} simulation complete.")
     print("Master chain equation (every arrow is derived, none postulated):")
     print("  substrate R_ij -> (S_9, K_1) -> Phi_Omega -> psi_t -> p_t=|psi_t|^2")
     print("    -> ZOMBIE microcell quantization when starvation forces exchangeability")
@@ -2908,7 +2910,7 @@ def main() -> None:
     print("    -> psi_{i,t+1}=psi_{i,t} exp(-i theta L_{i,t})")
     print("    -> (D_{t+1}, p_{t+1}, b_{t+1})")
     print("    -> {Lindblad, Landauer, Gravity, Time, CMB, Born, Bell/CHSH} bridges")
-    print("    -> v5.7 falsification target: ZOMBIE-gated Bell violation")
+    print("    -> falsification target: ZOMBIE-gated Bell violation")
     print()
     print("Closure: the universe becomes solid, directional, heavy,")
     print("time-slowed, structured, and stable for one basic reason:")

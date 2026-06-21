@@ -1,8 +1,6 @@
-﻿# FPM v5.7 — The Complete Unified Paper
+# FPM — The Complete Unified Paper
 
 **Author:** Alx Spiker · Edmonton, Alberta, Canada
-**Date:** 20 June 2026
-**Version:** v5.7 — Complete Unified Paper (single document)
 
 ## Read the Paper
 
@@ -13,16 +11,15 @@ The complete paper is [`FPM_Complete_Unified.pdf`](./FPM_Complete_Unified.pdf).
 ## What's in this package
 
 ```
-FPM_v52_Complete/
+.
 ├── README.md                                      # This file
 ├── FPM_Complete_Unified.pdf                       # The single unified paper
-├── FPM_Complete_Unified.md                        # Markdown summary
 ├── generate_fpm_complete.py                       # PDF generator script
 ├── fpm_simulator.py                               # Closed-form simulator
 ├── fpm_results.json                               # Generated simulator results
 ├── simulator_charts/                              # Generated simulator PNGs
 ├── verify_derivations.py                          # Verification script
-├── generate_unified_charts.py                     # Chart generator (11 figures)
+├── generate_unified_charts.py                     # Chart generator (10 diagrams)
 └── unified_charts/                                # Generated chart PNGs
     ├── 01_master_chain.png
     ├── 02_layer_architecture.png
@@ -56,11 +53,19 @@ python verify_derivations.py
 ```
 This runs all 9 derivation checks and prints a summary. All checks pass.
 
+### Run the simulator
+```bash
+pip install matplotlib numpy
+python fpm_simulator.py
+```
+This re-derives all constants, runs the validation suite, and writes `fpm_results.json` plus charts under `simulator_charts/`.
+
 ### Regenerate the PDF
 ```bash
 pip install reportlab matplotlib numpy pillow
-python generate_unified_charts.py    # Regenerates all 10 diagrams
-python generate_fpm_complete.py      # Regenerates the PDF
+python generate_unified_charts.py    # Regenerates 10 unified diagrams
+python fpm_simulator.py                # Refreshes simulator results/charts
+python generate_fpm_complete.py        # Regenerates the PDF (11 figures total)
 ```
 
 ## Paper Structure (10 parts, 33 sections)
@@ -78,7 +83,7 @@ python generate_fpm_complete.py      # Regenerates the PDF
 
 ### Part IV: Per-Tick Dynamics (with L_max, L_rest, λ derivations inline)
 - §6 The Closed Energy Ledger
-- §7 The Four Closure Theorems
+- §7 The Four Closure Theorems (structural lemmas: energy, entropy, angular momentum, information)
 - §8 Derivation of the Action Floor c_0 = 0.05
 - §9 Derivation of the Smoothness Coefficient λ = 36/7
 - §10 Derivation of the Action Ceiling L_max = 3.285
@@ -94,6 +99,7 @@ python generate_fpm_complete.py      # Regenerates the PDF
 - §23 Bridge 5: CMB (16/3 ratio, A_FPM, n_s, r, ℓ_D **all derived inline**)
 - §23.7 Bridge 6: Born-compatible distribution bridge
 - §23.8 Bridge 7: Joint torsion Bell/CHSH bridge (**rotated torsion-flux audit, S = 2.828427**)
+- §23.9 Proposed experimental signature: ZOMBIE-gated Bell violation
 
 **Locality clarification:** The Bell/CHSH bridge is not a local-hidden-variable model. Bell correlations force a tradeoff: standard quantum mechanics gives up classical realism, while FPM keeps definite discrete daemon states and bounded memory, so it gives up Bell locality. It uses explicit topological non-local links: pure-gauge torsion boundaries with zero geometric cost. Joint LRM quantization resolves statistics across those shared boundaries when linked daemons enter ZOMBIE mode.
 
@@ -136,7 +142,6 @@ python generate_fpm_complete.py      # Regenerates the PDF
 | n_s (spectral tilt) | 0.9686 | §23.5 |
 | r (tensor-to-scalar) | 0.00349 | §23.5 |
 | ℓ_D (damping scale) | 1310 | §23.6 |
-| N_bit-eq (substrate capacity) | 1,452,997,909 | §20, §23.4 |
 | G_FPM (gravity) | 6.680×10⁻¹¹ | §25 |
 | calib (AxCore factor) | 80 | §26 |
 | Δt_univ (universal tick) | 1.152×10⁻²³ s | §24 |
@@ -154,7 +159,7 @@ All 9 derivation checks pass:
 | 4 | 16/3 ledger inertia | 5.333 | 5.333 | exact |
 | 5 | Lag ceiling γ_max | 31.8739 | 31.8739 | exact |
 | 6 | Point-Pair α_PP | 702.628349 | 702.628349 | 6.4e-13 rel. |
-| 7 | CMB A_FPM, n_s, r, ℓ_D | 4.04e-5, 0.969, 0.0035, 1310 | — | all in range |
+| 7 | CMB A_FPM, n_s, r, ℓ_D | 4.04e-5, 0.9686, 0.0035, 1310 | — | all in range |
 | 8 | G_FPM | 6.680e-11 | 6.674e-11 (CODATA) | 0.09% off at T=300.0 K |
 | 9 | Calibration factor | 80 | 80 | exact |
 
@@ -170,27 +175,12 @@ All 9 derivation checks pass:
 
 **No further postulates appear anywhere in the paper.**
 
-## What's different from v5.0/v5.1
-
-- **v5.0** was the interpretive framework (what things mean) — 41 pages
-- **v5.1** was the pure derivation document (how things are proven) — 28 pages
-- **v5.2** is the **single unified paper** that combines both, with all derivations inline where they belong
-- **v5.3** replaces the continuous N_bit-eq approximation with the exact discrete Z^3 lattice-point count 1,452,997,909 and reports the resulting deterministic G_FPM variance at T=300.0 K
-- **v5.4** seals the depletion-floor, galaxy-boundary, and clipping-ledger audit leaks by distinguishing raw/effective e(B), making R_d an environmental boundary input, and tracking thermal exhaust/starvation deficit
-- **v5.5** codifies the Born-compatible distribution bridge with exact finite microcell quantization and explicit no-label exchangeability as the remaining conditional theorem
-- **v5.6** adds the joint torsion Bell/CHSH bridge: local torsion quantization saturates S=2, while rotated pure-gauge torsion flux plus joint LRM reaches S=2.828427. The bridge is explicitly topological/non-local in Bell's sense, not a local-hidden-variable repair.
-- **v5.7** (this) adds the proposed ZOMBIE-gated Bell signature: CHSH remains Bell-classical without the torsion link or when either wing stays in FLOW mode, but rises toward Tsirelson only when both linked wings enter deep ZOMBIE mode simultaneously.
-
-The v5.7 paper is the definitive document. It contains everything from v5.0-v5.6 in a single coherent narrative.
-
 ## The Deepest Result
 
-The FPM v5.7 framework is a fully axiomatic system. Every observable prediction is a theorem of the five axioms or a bridge evaluation with explicit environmental inputs. The Born-compatible bridge, joint torsion Bell/CHSH audit, and ZOMBIE-gated Bell signature now provide candidate finite-substrate measurement tests: the Bell angle dependence is computed from SO(3) rotation of a shared pure-gauge torsion link before exact LRM microcell allocation, and the violation is predicted to require simultaneous deep low-energy operation of both linked wings. This remains an explicitly topological/non-local bridge result pending independent physical validation, not a locally mediated Bell violation. In short: FPM is a non-local realist topology that represents Tsirelson-level correlations with linear memory instead of exponential tensor-product storage. The framework's empirical engagements (SPARC, Planck, CODATA, Bell gating) are genuine tests of the axioms, not fits to data.
+The FPM framework is a fully axiomatic system. Every observable prediction is a theorem of the five axioms or a bridge evaluation with explicit environmental inputs. The Born-compatible bridge, joint torsion Bell/CHSH audit, and ZOMBIE-gated Bell signature now provide candidate finite-substrate measurement tests: the Bell angle dependence is computed from SO(3) rotation of a shared pure-gauge torsion link before exact LRM microcell allocation, and the violation is predicted to require simultaneous deep low-energy operation of both linked wings. This remains an explicitly topological/non-local bridge result pending independent physical validation, not a locally mediated Bell violation. In short: FPM is a non-local realist topology that represents Tsirelson-level correlations with linear memory instead of exponential tensor-product storage. The framework's empirical engagements (SPARC, Planck, CODATA, Bell gating) are genuine tests of the axioms, not fits to data.
 
 **The 0.09% deterministic match to CODATA G at T=300.0 K, the 0.45% match to Planck dark-to-baryonic ratio, and the 0.54% match to Planck TT RMS are all derived predictions, not fitted parameters.**
 
 ---
 
-*FPM v5.7 · Complete Unified Paper · 20 June 2026*
-
-
+*FPM · Complete Unified Paper*

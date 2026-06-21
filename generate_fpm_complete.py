@@ -2973,7 +2973,7 @@ def build_part_x():
     flow.append(Paragraph("33. Appendix C: Verification Summary", styles['H1']))
     flow.append(Paragraph(
         "Every derivation in this paper has been numerically verified. The "
-        "verification script (<font face='Courier'>verify_v51_derivations.py</font>) "
+        "verification script (<font face='Courier'>verify_derivations.py</font>) "
         "computes each derived quantity from its inputs and checks against "
         "the stated target value. All 9 verification checks pass:",
         styles['Body']))
@@ -2986,7 +2986,7 @@ def build_part_x():
         ['4', '16/3 ledger inertia', '5.333', '5.333', 'exact'],
         ['5', 'Lag ceiling gamma_max', '31.8739', '31.8739', 'exact'],
         ['6', 'Point-Pair alpha_PP', '702.628349', '702.628349', '6.4e-13 rel.'],
-        ['7', 'CMB A_FPM, n_s, r, ell_D', '4.04e-5, 0.969, 0.0035, 1310', '-', 'all in range'],
+        ['7', 'CMB A_FPM, n_s, r, ell_D', '4.04e-5, 0.9686, 0.0035, 1310', '-', 'all in range'],
         ['8', 'G_FPM', '6.680e-11', '6.674e-11 (CODATA)', '0.09% off at T=300.0 K'],
         ['9', 'Calibration factor', '80', '80', 'exact'],
     ]

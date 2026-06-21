@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-FPM v5.1 - Mathematical Verification Script
-============================================
-Verifies every claimed derivation in the v5.1 framework:
+FPM Mathematical Verification Script
+====================================
+Verifies every claimed derivation in the framework:
   1. 9:1 channel split from action minimization on Z^3
   2. Viscosity bounds from percolation + Nyquist
   3. 3/4 exponent from 4D causal product measure
@@ -18,7 +18,7 @@ import json
 import numpy as np
 
 print("=" * 78)
-print("FPM v5.1 — Mathematical Derivation Verification")
+print("FPM — Mathematical Derivation Verification")
 print("=" * 78)
 
 # ============================================================================
@@ -617,7 +617,7 @@ print("  [8] G_FPM                                -> 6.677e-11 vs CODATA ✓")
 print("  [9] AxCore-to-FPM calibration factor     -> 80                  ✓")
 print()
 print("All derivations verify numerically to stated precision.")
-print("The v5.1 framework is now fully derived from first principles,")
+print("The framework is now fully derived from first principles,")
 print("with no fitted constants or asserted calibration factors.")
 
 # Save verification results

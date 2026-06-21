@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-FPM v5.6 Unified Framework - Chart Generator
-=============================================
+FPM Unified Framework - Chart Generator
+========================================
 Generates all diagrams for the unified framework PDF:
   1. The Master Chain (single-equation causal pipeline)
   2. The 5-Layer Architecture
@@ -979,7 +979,7 @@ def chart_theorem_graph():
 # Main
 # =============================================================================
 def main():
-    print("Generating FPM v5.6 Unified Framework charts...")
+    print("Generating FPM unified framework charts...")
     chart_master_chain()
     chart_layer_architecture()
     chart_axcore_cost_surface()
