@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-FPM v5.4 Unified Framework - Chart Generator
+FPM v5.6 Unified Framework - Chart Generator
 =============================================
 Generates all diagrams for the unified framework PDF:
   1. The Master Chain (single-equation causal pipeline)
@@ -52,6 +52,17 @@ OUTPUT_DIR = os.path.join(SCRIPT_DIR, 'unified_charts')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
+def light_fill(hex_color, mix=0.92):
+    """Return an opaque pastel fill by mixing a hex color with white."""
+    hex_color = hex_color.lstrip('#')
+    r = int(hex_color[0:2], 16) / 255
+    g = int(hex_color[2:4], 16) / 255
+    b = int(hex_color[4:6], 16) / 255
+    return (r * (1 - mix) + mix,
+            g * (1 - mix) + mix,
+            b * (1 - mix) + mix)
+
+
 def save_fig(fig, name, dpi=180):
     path = os.path.join(OUTPUT_DIR, name)
     fig.savefig(path, dpi=dpi, bbox_inches='tight', facecolor='white',
@@ -92,7 +103,7 @@ def chart_master_chain():
         ('E_{t+1} = clip(E_t - L_t + r, 0, E_max)\n(closed energy ledger)',
          3.5, 0.2, 6.5, 1.1, COL_GOLD, 'L3'),
         # Layer 5/6: Bridges (right)
-        ('Bridges:\nLandauer, Gravity,\nTime, Mass, CMB',
+        ('Bridges:\nLandauer, Gravity,\nTime, CMB,\nBorn, Bell/CHSH',
          11.2, 1.6, 2.5, 2.3, COL_RED, 'L5'),
     ]
 
@@ -180,7 +191,7 @@ def chart_layer_architecture():
     ax.set_ylim(0, 8.5)
     ax.axis('off')
 
-    ax.text(5.5, 8.2, 'FPM v5.0: Five-Layer Axiomatic Architecture',
+    ax.text(5.5, 8.2, 'FPM Five-Layer Axiomatic Architecture',
             ha='center', va='top', fontsize=14, fontweight='bold', color=COL_PRIMARY)
     ax.text(5.5, 7.85, 'Each layer derives strictly from the layer above. No fitting. No post-hoc parameters.',
             ha='center', va='top', fontsize=9, color=COL_GREY, style='italic')
@@ -435,10 +446,12 @@ def chart_galaxy_rotation():
     ax.axvspan(5, 60, alpha=0.08, color=COL_GREEN)
     ax.axvspan(60, 250, alpha=0.08, color=COL_BLUE)
 
-    ax.text(2.5, 250, 'Inner\ncore\nrise', ha='center', fontsize=8,
-            color=COL_GOLD, fontweight='bold')
-    ax.text(30, 250, 'Flat branch\n(r_c << r << R_d)', ha='center', fontsize=8,
-            color=COL_GREEN, fontweight='bold')
+    label_box = dict(boxstyle='round,pad=0.2', facecolor='white',
+                     edgecolor='none', alpha=0.8)
+    ax.text(8, 230, 'Inner\ncore\nrise', ha='center', fontsize=8,
+            color=COL_GOLD, fontweight='bold', bbox=label_box)
+    ax.text(43, 258, 'Flat branch\n(r_c << r << R_d)', ha='center', fontsize=8,
+            color=COL_GREEN, fontweight='bold', bbox=label_box)
     ax.text(150, 250, 'Rollover\n(r >> R_d)', ha='center', fontsize=8,
             color=COL_BLUE, fontweight='bold')
 
@@ -462,7 +475,7 @@ def chart_galaxy_rotation():
 
     # Right: SPARC audit summary
     ax = axes[1]
-    methods = ['Baryon-only', 'FPM v4.4\n(fitted eta)', 'FPM v5.0\n(derived eta)',
+    methods = ['Baryon-only', 'legacy FPM\n(fitted eta)', 'FPM single-\nsource kernel',
                'FPM split-\nsource stress', 'RAR / MOND\n(fixed)']
     rmse = [46.79, 318.14, 23.94, 13.65, 11.72]
     colors = [COL_GREY, COL_RED, COL_GOLD, COL_BLUE, COL_GREEN]
@@ -474,8 +487,10 @@ def chart_galaxy_rotation():
                 fontweight='bold')
 
     ax.axvline(12, color=COL_GREEN, linestyle=':', alpha=0.6, linewidth=1.5)
-    ax.text(12.5, 4.5, 'Competitive\nthreshold\n(12 km/s)', fontsize=8,
-            color=COL_GREEN, fontweight='bold')
+    ax.text(14.0, 4.18, 'competitive threshold\n12 km/s', fontsize=8,
+            color=COL_GREEN, fontweight='bold',
+            bbox=dict(boxstyle='round,pad=0.2', facecolor='white',
+                      edgecolor='none', alpha=0.85))
 
     ax.set_xlabel('Median RMSE (km/s)', fontsize=10)
     ax.set_title('SPARC R2 Audit (Q=1, 99 galaxies)\n'
@@ -539,7 +554,7 @@ def chart_cmb_spectrum():
 
     # Right: Likelihood comparison
     ax = axes[1]
-    methods = ['LCDM\n(best fit)', 'FPM v5.0\n(fixed nuisance)',
+    methods = ['LCDM\n(best fit)', 'FPM\n(fixed nuisance)',
                'FPM post-\nmarginalization\n(projected)']
     chi2 = [3437.5, 3441.66, 3445.0]
     chi2_err = [0, 4.16, 7.5]
@@ -596,7 +611,7 @@ def chart_closure_diagram():
          'Closed integral A_ij dS^j = 0.\nNoether preserved on S_ij.',
          COL_GOLD),
         (6.0, 0.7, 4.5, 2.3, 'Information Closure',
-         'route cost -> {decoherence,\ngravity, time, mass, CMB}\n\n'
+         'route cost -> {Lindblad,\ngravity, time, CMB,\nBorn, Bell/CHSH}\n\n'
          'Single currency across\nall physical sectors.',
          COL_RED),
     ]
@@ -604,27 +619,28 @@ def chart_closure_diagram():
     for x, y, w, h, title, eq, color in boxes:
         rect = FancyBboxPatch((x, y), w, h, boxstyle='round,pad=0.08',
                               edgecolor=color, facecolor=color + '15',
-                              linewidth=2.5)
+                              linewidth=2.5, zorder=2)
         ax.add_patch(rect)
         ax.text(x + w / 2, y + h - 0.3, title, ha='center', va='top',
-                fontsize=12, fontweight='bold', color=color)
+                fontsize=12, fontweight='bold', color=color, zorder=3)
         ax.text(x + w / 2, y + h - 0.85, eq, ha='center', va='top',
-                fontsize=9.5, color=COL_PRIMARY, family='monospace')
+                fontsize=9.5, color=COL_PRIMARY, family='monospace', zorder=3)
 
     # Center label
     center = FancyBboxPatch((4.0, 2.85), 3.0, 0.85, boxstyle='round,pad=0.05',
                             edgecolor=COL_PRIMARY, facecolor=COL_PRIMARY,
-                            linewidth=2)
+                            linewidth=2, zorder=4)
     ax.add_patch(center)
     ax.text(5.5, 3.27, 'CLOSED LEDGER', ha='center', va='center',
-            fontsize=11, fontweight='bold', color='white')
+            fontsize=11, fontweight='bold', color='white', zorder=5)
 
     # Arrows from center to each box
-    for cx, cy in [(2.75, 4.65), (8.25, 4.65), (2.75, 1.85), (8.25, 1.85)]:
+    for cx, cy in [(5.0, 3.55), (6.0, 3.55), (5.0, 2.95), (6.0, 2.95)]:
         arrow = FancyArrowPatch((5.5, 3.27), (cx, cy),
                                 arrowstyle='->', color=COL_GREY,
                                 mutation_scale=15, linewidth=1.4,
-                                connectionstyle='arc3,rad=0.0')
+                                connectionstyle='arc3,rad=0.0',
+                                zorder=1, alpha=0.75)
         ax.add_patch(arrow)
 
     return save_fig(fig, '07_closure_diagram.png')
@@ -694,7 +710,7 @@ def chart_calibration_bridge():
                             linewidth=1.5)
     ax.add_patch(ribbon)
     ax.text(6.5, 0.75,
-            'G_FPM = 6.677e-11 m^3 kg^-1 s^-2  (within 0.044% of CODATA: 6.674e-11)',
+            'G_FPM = 6.680e-11 m^3 kg^-1 s^-2  (0.09% high vs CODATA: 6.6743e-11 at T=300 K)',
             ha='center', va='center', fontsize=10.5, fontweight='bold',
             color='white')
 
@@ -729,13 +745,17 @@ def chart_metabolic_modes():
     # Threshold lines
     ax.axvline(E_zombie, color=COL_RED, linewidth=2, linestyle='--')
     ax.axvline(E_fatigue, color=COL_GOLD, linewidth=2, linestyle='--')
-    ax.text(E_zombie, -0.4, f'E_zombie\n= 0.20 * E_max\n= {E_zombie}',
-            ha='center', va='top', fontsize=8, color=COL_RED, fontweight='bold')
-    ax.text(E_fatigue, -0.4, f'E_fatigue\n= 0.28 * E_max\n= {E_fatigue}',
-            ha='center', va='top', fontsize=8, color=COL_GOLD, fontweight='bold')
+    key_box = dict(boxstyle='round,pad=0.32', facecolor='white',
+                   edgecolor='#C8CED8', alpha=1.0)
+    ax.text(E_zombie, -0.62, f'ZOMBIE threshold\nE = {E_zombie} (20%)',
+            ha='center', va='center', fontsize=8,
+            color=COL_RED, fontweight='bold', bbox=key_box, zorder=5)
+    ax.text(E_fatigue, -0.94, f'FATIGUE threshold\nE = {E_fatigue} (28%)',
+            ha='center', va='center', fontsize=8,
+            color=COL_GOLD, fontweight='bold', bbox=key_box, zorder=5)
 
     ax.set_xlim(-30, E_max + 30)
-    ax.set_ylim(-1.0, 0.6)
+    ax.set_ylim(-1.1, 0.6)
     ax.set_xlabel('Energy budget E_t', fontsize=10)
     ax.set_title('Metabolic Modes (AxCore operational template)\n'
                  'Three regimes derived from finite-resource pressure',
@@ -754,7 +774,7 @@ def chart_metabolic_modes():
                          0.50))
 
     ax.plot(E, threshold, color=COL_PRIMARY, linewidth=2.5,
-            label='Critic acceptance threshold')
+            label='Critical acceptance threshold')
 
     # Fitness sample trajectory (decreasing with energy depletion)
     np.random.seed(42)
@@ -835,49 +855,49 @@ def chart_theorem_graph():
 
     for x, y, w, h, name, content, color in theorems:
         rect = FancyBboxPatch((x, y), w, h, boxstyle='round,pad=0.05',
-                              edgecolor=color, facecolor=color + '18',
-                              linewidth=1.8)
+                              edgecolor=color, facecolor=light_fill(color),
+                              linewidth=1.8, zorder=3)
         ax.add_patch(rect)
         ax.text(x + w / 2, y + h - 0.25, name, ha='center', va='top',
-                fontsize=9.5, fontweight='bold', color=color)
+                fontsize=9.5, fontweight='bold', color=color, zorder=6)
         ax.text(x + w / 2, y + h - 0.7, content, ha='center', va='top',
-                fontsize=8, color=COL_PRIMARY, family='monospace')
+                fontsize=8, color=COL_PRIMARY, family='monospace', zorder=6)
 
-    # Arrows from axioms to theorems
-    for tx in [2.05, 6.0, 9.95]:
-        arrow = FancyArrowPatch((tx, 5.5), (tx, 5.0),
-                                arrowstyle='->', color=COL_GREY,
-                                mutation_scale=12, linewidth=1.5)
-        ax.add_patch(arrow)
-    # Spread to all 6
-    for tx in [2.05, 6.0, 9.95]:
-        arrow = FancyArrowPatch((tx, 5.5), (tx, 5.0),
-                                arrowstyle='->', color=COL_GREY,
-                                mutation_scale=12, linewidth=1.5)
-        ax.add_patch(arrow)
-    for tx in [2.05, 6.0, 9.95]:
-        arrow = FancyArrowPatch((6, 5.5), (tx, 5.0),
-                                arrowstyle='->', color=COL_GREY,
-                                mutation_scale=12, linewidth=1.0,
-                                alpha=0.4,
-                                connectionstyle='arc3,rad=0.1')
+    def dep_arrow(start, end, color, lw=2.4, alpha=0.95,
+                  rad=0.0, zorder=4):
+        arrow = FancyArrowPatch(start, end,
+                                arrowstyle='-|>',
+                                color=color,
+                                mutation_scale=18,
+                                linewidth=lw,
+                                alpha=alpha,
+                                shrinkA=8,
+                                shrinkB=8,
+                                connectionstyle=f'arc3,rad={rad}',
+                                zorder=zorder)
         ax.add_patch(arrow)
 
-    # Cross-dependencies (T1 -> T3, T4 -> T5, T5 -> T6, T1 -> T2)
+    # Direct axiom derivations. Every theorem has a visible source path.
+    top_axiom_sources = [(3.0, 5.5), (6.0, 5.5), (9.0, 5.5)]
+    top_targets = [(2.05, 5.0), (6.0, 5.0), (9.95, 5.0)]
+    for start, end in zip(top_axiom_sources, top_targets):
+        dep_arrow(start, end, COL_GREY, lw=2.0, alpha=0.7, zorder=2)
+
+    # T4 is also a direct axiom-entry theorem. Route it around T1 so it
+    # cannot be misread as a T1 -> T4 dependency.
+    dep_arrow((2.65, 5.5), (0.55, 2.8), COL_GREY,
+              lw=1.8, alpha=0.55, rad=0.35, zorder=1)
+
+    # Inter-theorem dependencies.
     cross_deps = [
-        (3.8, 4.25, 4.25, 4.25, '->'),  # T1 -> T2
-        (3.8, 4.0, 4.25, 2.4, '->'),    # T1 -> T4 (no, T4 is below)
-        (7.75, 4.25, 8.2, 4.25, '->'),  # T2 -> T3
-        (7.75, 2.0, 8.2, 2.0, '->'),    # T4 -> T5
-        (11.75, 2.0, 11.75, 3.5, '->'), # T5 -> T6
+        ((3.8, 4.25), (4.25, 4.25)),    # T1 -> T2
+        ((7.75, 4.25), (8.2, 4.25)),    # T2 -> T3
+        ((3.8, 2.05), (4.25, 2.05)),    # T4 -> T5
+        ((7.75, 2.05), (8.2, 2.05)),    # T5 -> T6
+        ((9.95, 2.8), (9.95, 3.5)),     # T6 -> T3
     ]
-    for sx, sy, ex, ey, style in cross_deps:
-        arrow = FancyArrowPatch((sx, sy), (ex, ey),
-                                arrowstyle=style, color=COL_ACCENT,
-                                mutation_scale=12, linewidth=1.2,
-                                alpha=0.7,
-                                connectionstyle='arc3,rad=0.0')
-        ax.add_patch(arrow)
+    for start, end in cross_deps:
+        dep_arrow(start, end, COL_ACCENT, lw=2.6, alpha=0.98, zorder=5)
 
     # Legend at bottom
     ax.text(6, 0.7,
@@ -891,7 +911,7 @@ def chart_theorem_graph():
 # Main
 # =============================================================================
 def main():
-    print("Generating FPM v5.4 Unified Framework charts...")
+    print("Generating FPM v5.6 Unified Framework charts...")
     chart_master_chain()
     chart_layer_architecture()
     chart_axcore_cost_surface()

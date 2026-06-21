@@ -1695,8 +1695,8 @@ def build_part_v():
         "The five axioms generate six exact theorems. Each theorem is a "
         "derived consequence, not a postulate; each is stated with explicit "
         "assumptions and a proof. The theorem dependency graph below shows "
-        "that all six derive directly from the axioms, with three "
-        "inter-theorem dependencies.",
+        "that all six derive directly from the axioms, with red arrows marking "
+        "the inter-theorem dependency paths.",
         styles['Body']))
     flow.extend(chart_img(os.path.join(CHARTS_DIR, '10_theorem_graph.png'),
                           width_cm=15.5,
@@ -2345,7 +2345,7 @@ def build_part_vi():
         "torsion LRM rather than independent local collapse."))
     flow.extend(chart_img(os.path.join(CHARTS_DIR, '09_bell_chsh.png'),
                           width_cm=16.0,
-                          caption_text="Figure 10. v5.6 Bell/CHSH audit. Left: local "
+                          caption_text="Figure 10. Bell/CHSH audit. Left: local "
                                        "torsion quantization is Bell-classical, while "
                                        "rotated torsion flux generates the cosine "
                                        "correlation before LRM quantization. Right: "
