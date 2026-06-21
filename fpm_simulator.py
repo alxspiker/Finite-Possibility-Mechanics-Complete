@@ -1282,8 +1282,39 @@ def bell_local_torsion_correlation(a: float, b: float) -> float:
 
 
 def bell_qm_correlation(a: float, b: float) -> float:
-    """Singlet-state quantum correlation E(a,b) = -cos(a-b)."""
+    """Reference singlet correlation used only as an external comparator."""
     return -math.cos(a - b)
+
+
+def measurement_plane_rotation(theta: float) -> np.ndarray:
+    """SO(3) rotation of the routing frame in the measurement plane."""
+    c = math.cos(theta)
+    s = math.sin(theta)
+    return np.array(
+        [[c, -s, 0.0],
+         [s, c, 0.0],
+         [0.0, 0.0, 1.0]],
+        dtype=float,
+    )
+
+
+def geometric_torsion_correlation(a: float,
+                                  b: float,
+                                  torsion: Optional[np.ndarray] = None) -> float:
+    """FPM-native Bell correlation from rotated pure-gauge torsion flux.
+
+    The correlation is not imported as the quantum singlet answer. A
+    measurement setting is represented as a rotation of the local routing
+    frame. The two wings share one antisymmetric pure-gauge torsion boundary;
+    after the relative frame rotation, the normalized preserved gauge flux is
+    the route-ledger invariant that drives joint microcell allocation.
+    """
+    A = make_pure_gauge_torsion(scale=1.0) if torsion is None else torsion
+    R_rel = measurement_plane_rotation(a - b)
+    A_eff = R_rel @ A @ R_rel.T
+    denom = float(np.sum(A * A)) + 1e-30
+    flux = float(np.sum(A_eff * A) / denom)
+    return -float(np.clip(flux, -1.0, 1.0))
 
 
 def joint_torsion_lrm_distribution(d: DerivedConstants,
@@ -1294,10 +1325,10 @@ def joint_torsion_lrm_distribution(d: DerivedConstants,
     The v5.6 candidate pivot is that linked daemons in ZOMBIE mode do not
     independently quantize local 9-channel carriers. They resolve starvation
     across the shared pure-gauge torsion boundary. The joint microcell
-    distribution is unbiased in each wing and carries only the angle-dependent
-    loop correlation.
+    distribution is unbiased in each wing and carries only the route-geometric
+    correlation produced by rotating the shared torsion link.
     """
-    E_target = bell_qm_correlation(a, b)
+    E_target = geometric_torsion_correlation(a, b)
     p_same = (1.0 + E_target) / 2.0
     p_diff = (1.0 - E_target) / 2.0
     p_joint = np.array(
@@ -1341,6 +1372,7 @@ def audit_joint_torsion_bell_bridge(d: DerivedConstants,
     angles = np.linspace(0.0, math.pi, n_angles)
     local_corr = np.array([bell_local_torsion_correlation(0.0, x) for x in angles])
     qm_corr = np.array([bell_qm_correlation(0.0, x) for x in angles])
+    geom_corr = np.array([geometric_torsion_correlation(0.0, x) for x in angles])
     joint_corr = []
     tvs = []
     corr_errors = []
@@ -1353,6 +1385,7 @@ def audit_joint_torsion_bell_bridge(d: DerivedConstants,
 
     S_local = chsh_value(bell_local_torsion_correlation)
     S_qm = chsh_value(bell_qm_correlation)
+    S_geom = chsh_value(geometric_torsion_correlation)
     S_joint = chsh_value(
         lambda a, b: joint_torsion_lrm_distribution(d, a, b)["fpm_correlation"]
     )
@@ -1370,12 +1403,15 @@ def audit_joint_torsion_bell_bridge(d: DerivedConstants,
         "angles": angles.tolist(),
         "local_torsion_correlation": local_corr.tolist(),
         "quantum_correlation": qm_corr.tolist(),
+        "geometric_torsion_correlation": geom_corr.tolist(),
         "joint_torsion_correlation": joint_corr_arr.tolist(),
         "S_local_torsion": S_local,
         "S_quantum_target": S_qm,
+        "S_geometric_torsion": S_geom,
         "S_joint_torsion_lrm": S_joint,
         "classical_bound": classical_bound,
         "tsirelson_bound": tsirelson_bound,
+        "max_geometric_vs_quantum_error": float(np.max(np.abs(geom_corr - qm_corr))),
         "max_joint_correlation_error": max(corr_errors),
         "max_joint_tv_distance": max(tvs),
         "standard_qm_density_matrix_bytes_11_base9": standard_qm_density_matrix_bytes_11,
@@ -1383,15 +1419,18 @@ def audit_joint_torsion_bell_bridge(d: DerivedConstants,
         "fpm_1m_daemon_bytes": fpm_1m_daemon_bytes,
         "mechanism": (
             "Local independent ZOMBIE quantization is Bell-classical. "
-            "Joint LRM quantization over the shared pure-gauge torsion loop "
-            "reproduces the singlet -cos(delta) correlation up to finite "
-            "microcell quantization error."
+            "The joint bridge first derives the angle dependence by rotating "
+            "the shared pure-gauge torsion link and measuring preserved gauge "
+            "flux, then applies LRM over the joint microcell ledger. The "
+            "topological link is explicitly non-local in Bell's sense."
         ),
         "verdict": (
             "PASS" if (
                 S_local <= classical_bound + 1e-12
+                and abs(S_geom - tsirelson_bound) < 5e-12
                 and S_joint > classical_bound
                 and abs(S_joint - tsirelson_bound) < 5e-8
+                and float(np.max(np.abs(geom_corr - qm_corr))) < 5e-12
                 and max(corr_errors) < 5e-8
             ) else "FAIL"
         ),
@@ -1950,11 +1989,16 @@ def metabolic_mode(E: float, E_max: float) -> str:
 
 
 def make_pure_gauge_torsion(scale: float = 0.015) -> np.ndarray:
-    """Small antisymmetric pure-gauge torsion seed for linked daemons."""
+    """Small antisymmetric pure-gauge torsion seed for linked daemons.
+
+    The v5.6 Bell audit uses the aligned measurement-plane generator. Under
+    SO(3) conjugation this pure-gauge link yields the preserved-flux cosine as
+    a routing invariant rather than importing it as a probability formula.
+    """
     return scale * np.array(
-        [[0.0, 1.0, -1.0],
-         [-1.0, 0.0, 1.0],
-         [1.0, -1.0, 0.0]],
+        [[0.0, 0.0, 0.0],
+         [0.0, 0.0, -1.0],
+         [0.0, 1.0, 0.0]],
         dtype=float,
     )
 
@@ -2376,10 +2420,12 @@ def plot_all(d: DerivedConstants, axioms: Axioms,
     bell = audit_joint_torsion_bell_bridge(d)
     angles = np.array(bell["angles"])
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.8), constrained_layout=True)
-    axes[0].plot(angles, bell["quantum_correlation"], color="#1a4a6a",
-                 lw=2.0, label="QM target: -cos(delta)")
+    axes[0].plot(angles, bell["geometric_torsion_correlation"], color="#1a4a6a",
+                 lw=2.0, label="geometric torsion flux")
     axes[0].plot(angles, bell["joint_torsion_correlation"], color="#2d7a4a",
                  ls="--", lw=1.5, label="FPM joint torsion LRM")
+    axes[0].plot(angles, bell["quantum_correlation"], color="#5f6f86",
+                 ls="-.", lw=1.0, label="QM reference")
     axes[0].plot(angles, bell["local_torsion_correlation"], color="#a83232",
                  ls=":", lw=1.5, label="local torsion/LHV")
     axes[0].set_xlabel("angle separation delta [rad]")

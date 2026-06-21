@@ -10,7 +10,7 @@
 
 Finite Possibility Mechanics (FPM) is a candidate mathematical framework that models any system processing information under finite resources. This **single self-contained paper** presents the framework in full: it states the five axioms, derives every constant inline (zero fitted parameters, zero asserted calibration factors), proves the six theorems, builds the seven physical bridges, calibrates to fundamental constants, and validates the framework through fourteen numerical experiments plus a starvation subtest.
 
-The framework is organized as a single causal chain: five axioms generate a directed routing ledger, the ledger produces a viscosity field through a constitutive law, the viscosity field gates a per-tick Lagrangian whose closed energy ledger drives coherence dynamics, and the resulting theorems bridge to Landauer dissipation, emergent gravity, time dilation, particle mass, holographic cosmology, the CMB acoustic oscillator, Born-compatible microcell quantization, and a joint torsion Bell/CHSH audit — all sharing one runtime currency, **route cost**.
+The framework is organized as a single causal chain: five axioms generate a directed routing ledger, the ledger produces a viscosity field through a constitutive law, the viscosity field gates a per-tick Lagrangian whose closed energy ledger drives coherence dynamics, and the resulting theorems bridge to Landauer dissipation, emergent gravity, time dilation, particle mass, holographic cosmology, the CMB acoustic oscillator, Born-compatible microcell quantization, and a joint torsion Bell/CHSH audit in which the angle dependence is computed from rotated pure-gauge torsion flux before exact LRM allocation — all sharing one runtime currency, **route cost**.
 
 ---
 

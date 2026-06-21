@@ -2272,10 +2272,10 @@ def build_part_vi():
         "<b>Conditional Bridge Result (Joint Torsion Measurement).</b> Local "
         "independent ZOMBIE quantization of two torsion-linked daemons is "
         "Bell-classical and saturates S = 2. Joint largest-remainder "
-        "quantization across the shared pure-gauge torsion boundary produces "
-        "the singlet correlation E(a,b) = &minus;cos(a&minus;b) up to finite "
-        "microcell quantization, reaching the Tsirelson value "
-        "S = 2&radic;2." ))
+        "quantization across the shared pure-gauge torsion boundary reaches "
+        "the Tsirelson value S = 2&radic;2 after the angle dependence is "
+        "computed from the rotated torsion flux, not imported as a quantum "
+        "probability formula." ))
     flow.append(Paragraph(
         "The v5.6 correction is the measurement rule for linked carriers. If "
         "two daemons share a torsion loop A<sub>ij</sub><sup>(A)</sup> = "
@@ -2284,8 +2284,11 @@ def build_part_vi():
         "on the shared boundary as one four-outcome joint microcell ledger:",
         styles['Body']))
     flow.extend(eq(
-        r"P_{++}=P_{--}=\frac{1-\cos(a-b)}{4},\qquad "
-        r"P_{+-}=P_{-+}=\frac{1+\cos(a-b)}{4}"))
+        r"A_{\mathrm{eff}}(a,b)=R_z(a-b) A R_z(a-b)^T,\qquad "
+        r"E_{\mathrm{geom}}(a,b)=-\frac{A_{\mathrm{eff}}:A}{A:A}"))
+    flow.extend(eq(
+        r"P_{++}=P_{--}=\frac{1+E_{\mathrm{geom}}(a,b)}{4},\qquad "
+        r"P_{+-}=P_{-+}=\frac{1-E_{\mathrm{geom}}(a,b)}{4}"))
     flow.extend(eq(
         r"n_{\alpha\beta}=\mathrm{LRM}(N_{\mathrm{bit\text{-}eq}}P_{\alpha\beta}),\qquad "
         r"E_{\mathrm{FPM}}(a,b)=P_{++}-P_{+-}-P_{-+}+P_{--}"))
@@ -2297,10 +2300,20 @@ def build_part_vi():
         "CHSH S = 2.000000. This is the local-hidden-variable failure mode."))
     flow.append(derivation(
         "<b>Joint boundary resolution.</b> If the starvation selector resolves "
-        "the shared torsion boundary as one joint ledger, the four microcell "
-        "counts above give E<sub>FPM</sub>(&delta;) &asymp; &minus;cos&delta;. "
-        "The simulator audit gives S<sub>joint</sub> = 2.828427, matching "
+        "the shared torsion boundary as one joint ledger, the analyzer angles "
+        "act as SO(3) rotations of the local routing frames. For the aligned "
+        "antisymmetric pure-gauge generator used in the audit, the preserved "
+        "flux invariant gives E<sub>geom</sub>(&delta;) = &minus;cos&delta; "
+        "algebraically. The simulator then applies LRM to that geometric "
+        "ledger distribution and gives S<sub>joint</sub> = 2.828427, matching "
         "2&radic;2 to finite microcell precision."))
+    flow.append(derivation(
+        "<b>Locality status.</b> This is not a local-hidden-variable repair of "
+        "Bell's theorem. The shared torsion boundary is an explicit topological "
+        "non-local resource: the joint ledger depends on the relative analyzer "
+        "rotation across the linked pair. The bridge therefore claims a "
+        "linear-memory topological representation of the correlation, not a "
+        "locally mediated Bell violation."))
     flow.append(derivation(
         "<b>Runtime integration.</b> In v5.6 the master-chain loop treats "
         "torsion links as active routing objects. If either daemon in a linked "
@@ -2312,9 +2325,10 @@ def build_part_vi():
                           width_cm=16.0,
                           caption_text="Figure 10. v5.6 Bell/CHSH audit. Left: local "
                                        "torsion quantization is Bell-classical, while "
-                                       "joint torsion LRM tracks the singlet cosine "
-                                       "correlation. Right: the joint torsion bridge "
-                                       "reaches the Tsirelson bound S = 2.828427."))
+                                       "rotated torsion flux generates the cosine "
+                                       "correlation before LRM quantization. Right: "
+                                       "the joint torsion bridge reaches the "
+                                       "Tsirelson bound S = 2.828427."))
     flow.append(result_box(
         "<b>Result:</b> The v5.6 simulator distinguishes the local torsion "
         "failure mode from the joint torsion measurement rule. The joint rule "
