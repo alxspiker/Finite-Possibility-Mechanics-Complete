@@ -612,7 +612,12 @@ def build_abstract():
         "the resulting theorems bridge to Landauer dissipation, emergent "
         "gravity, time dilation, particle mass, holographic cosmology, the CMB "
         "acoustic oscillator, Born-compatible microcell quantization, and a "
-        "joint torsion Bell/CHSH bridge &mdash; all sharing "
+        "joint torsion Bell/CHSH bridge using explicit topological non-local "
+        "links (pure-gauge torsion boundaries with zero geometric cost). The "
+        "Bell bridge is not local in Bell's sense: the strong correlations "
+        "arise from joint largest-remainder quantization across pre-established "
+        "shared boundary conditions whose resolution depends on the relative "
+        "analyzer settings of the linked pair. All bridges share "
         "one runtime currency, <i>route cost</i>. The AxCore operational "
         "implementation supplies the empirical ground truth for the thermodynamic "
         "cost formula, calibrated to FPM scale by a derived factor of 80. Every "
@@ -635,10 +640,25 @@ def build_abstract():
         "The framework is classified as a <b>phenomenological information-"
         "theoretic topology</b>: viable as an interpretive framework, productive "
         "as a source of falsifiable predictions, and honest about its divergences "
-        "from standard physics (joint torsion measurement bridge still pending "
+        "from standard physics (joint torsion measurement bridge pending "
         "independent physical validation, no Einstein field equations, energy "
         "as thermodynamic potential rather than Noether charge).",
         styles['AbstractBody']))
+    flow.append(Spacer(1, 6))
+    flow.append(Paragraph(
+        "<b>Important clarification on locality.</b> FPM does not claim to be "
+        "a local theory in the sense of Bell's theorem. Bell correlations force "
+        "a tradeoff: standard quantum mechanics gives up classical realism, "
+        "while FPM keeps definite discrete daemon states and bounded memory, so "
+        "it gives up Bell locality. Entanglement is modeled via explicit shared "
+        "topological links (pure-gauge torsion boundaries) that connect daemons. "
+        "These links have zero geometric cost but allow joint resolution of "
+        "statistics when linked daemons enter low-energy (ZOMBIE) mode. The "
+        "non-locality is deliberate and topological, not a hidden signaling "
+        "mechanism and not a local-hidden-variable repair. FPM is therefore a "
+        "non-local realist topology that represents Tsirelson-level correlations "
+        "with linear memory instead of exponential tensor-product storage.",
+        styles['Result']))
     flow.append(Spacer(1, 6))
     keywords = Paragraph(
         'Finite Possibility Mechanics; axiomatic information theory; thermodynamic '
@@ -2311,9 +2331,11 @@ def build_part_vi():
         "<b>Locality status.</b> This is not a local-hidden-variable repair of "
         "Bell's theorem. The shared torsion boundary is an explicit topological "
         "non-local resource: the joint ledger depends on the relative analyzer "
-        "rotation across the linked pair. The bridge therefore claims a "
-        "linear-memory topological representation of the correlation, not a "
-        "locally mediated Bell violation."))
+        "rotation across both wings of the linked pair at resolution time. This "
+        "is not mediated by a local hidden variable or a light-speed signal. "
+        "The bridge therefore claims a linear-memory topological representation "
+        "of the correlation, not a locally mediated Bell violation. The "
+        "non-locality is owned, not hidden."))
     flow.append(derivation(
         "<b>Runtime integration.</b> In v5.6 the master-chain loop treats "
         "torsion links as active routing objects. If either daemon in a linked "

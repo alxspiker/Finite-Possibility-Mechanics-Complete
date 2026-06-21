@@ -95,6 +95,8 @@ python generate_fpm_complete.py      # Regenerates the PDF
 - §23.7 Bridge 6: Born-compatible distribution bridge
 - §23.8 Bridge 7: Joint torsion Bell/CHSH bridge (**rotated torsion-flux audit, S = 2.828427**)
 
+**Locality clarification:** The Bell/CHSH bridge is not a local-hidden-variable model. Bell correlations force a tradeoff: standard quantum mechanics gives up classical realism, while FPM keeps definite discrete daemon states and bounded memory, so it gives up Bell locality. It uses explicit topological non-local links: pure-gauge torsion boundaries with zero geometric cost. Joint LRM quantization resolves statistics across those shared boundaries when linked daemons enter ZOMBIE mode.
+
 ### Part VII: Calibration & G_FPM (with full derivation inline)
 - §24 Derivation of the Universal Engine Tick
 - §25 Derivation of G_FPM (8-step derivation, 0.09% from CODATA at T=300.0 K)
@@ -182,7 +184,7 @@ The v5.6 paper is the definitive document. It contains everything from v5.0-v5.5
 
 ## The Deepest Result
 
-The FPM v5.6 framework is a fully axiomatic system. Every observable prediction is a theorem of the five axioms or a bridge evaluation with explicit environmental inputs. The Born-compatible bridge and joint torsion Bell/CHSH audit now provide a candidate finite-substrate measurement mechanism: the Bell angle dependence is computed from SO(3) rotation of a shared pure-gauge torsion link before exact LRM microcell allocation. This remains a topological/non-local bridge result pending independent physical validation. The framework's empirical engagements (SPARC, Planck, CODATA) are genuine tests of the axioms, not fits to data.
+The FPM v5.6 framework is a fully axiomatic system. Every observable prediction is a theorem of the five axioms or a bridge evaluation with explicit environmental inputs. The Born-compatible bridge and joint torsion Bell/CHSH audit now provide a candidate finite-substrate measurement mechanism: the Bell angle dependence is computed from SO(3) rotation of a shared pure-gauge torsion link before exact LRM microcell allocation. This remains an explicitly topological/non-local bridge result pending independent physical validation, not a locally mediated Bell violation. In short: FPM is a non-local realist topology that represents Tsirelson-level correlations with linear memory instead of exponential tensor-product storage. The framework's empirical engagements (SPARC, Planck, CODATA) are genuine tests of the axioms, not fits to data.
 
 **The 0.09% deterministic match to CODATA G at T=300.0 K, the 0.45% match to Planck dark-to-baryonic ratio, and the 0.54% match to Planck TT RMS are all derived predictions, not fitted parameters.**
 
