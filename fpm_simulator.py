@@ -290,6 +290,29 @@ def compute_N_bit_eq_exact(alpha_PP: float) -> int:
     return count
 
 
+def iterate_alpha_pp_counterterm(alpha_PP_1: float,
+                                 alpha_PP_2: float,
+                                 L_rest: float,
+                                 *,
+                                 tol: float = 1e-15,
+                                 max_iter: int = 200) -> float:
+    """Solve the step-4 alpha_PP boundary counterterm by fixed-point iteration."""
+    b1 = 1.5
+    c2 = 7.5 - L_rest
+    x = alpha_PP_2
+    last_delta = math.inf
+    for _ in range(max_iter):
+        x_new = alpha_PP_1 + b1 / (x + 9.0) + c2 / ((x + 9.0) ** 2)
+        last_delta = abs(x_new - x)
+        if last_delta < tol * abs(x):
+            return x_new
+        x = x_new
+    raise RuntimeError(
+        "alpha_PP counterterm fixed-point failed to converge after "
+        f"{max_iter} iterations (last delta={last_delta:.3e}, x={x:.12f})"
+    )
+
+
 def derive_all(ax: Axioms) -> DerivedConstants:
     """Re-derive every constant in the paper from the five axioms.
 
@@ -388,16 +411,7 @@ def derive_all(ax: Axioms) -> DerivedConstants:
     alpha_PP_2 = (- (9.0 - a1) + math.sqrt((9.0 - a1) ** 2 + 4.0 * (9.0 * a1 + b1))) / 2.0
     # Step 4: second-order boundary counterterm
     # alpha_PP_3 = alpha_PP_1 + (3/2)/(alpha_PP_3 + 9) + (15/2 - L_rest)/(alpha_PP_3 + 9)^2
-    c2 = 7.5 - d.L_rest                              # = 7.3969375
-    # Fixed-point iteration (paper says "iterating to convergence")
-    x = alpha_PP_2
-    for _ in range(200):
-        x_new = alpha_PP_1 + b1 / (x + 9.0) + c2 / ((x + 9.0) ** 2)
-        if abs(x_new - x) < 1e-15 * abs(x):
-            x = x_new
-            break
-        x = x_new
-    d.alpha_PP = x                                  # ~702.628349000451
+    d.alpha_PP = iterate_alpha_pp_counterterm(alpha_PP_1, alpha_PP_2, d.L_rest)
 
     # ---- Cosmology Result 2: A_FPM -----------------------------------------
     # N_bit_eq is the EXACT INTEGER count of Z^3 lattice points within a
@@ -959,15 +973,7 @@ def theorem5_alpha_pp_convergence(d: DerivedConstants) -> Dict[str, float]:
     # Step 3 quadratic
     b1 = 1.5
     a2 = (- (9.0 - a1) + math.sqrt((9.0 - a1) ** 2 + 4.0 * (9.0 * a1 + b1))) / 2.0
-    # Step 4 fixed-point iteration
-    c2 = 7.5 - d.L_rest
-    x = a2
-    for _ in range(200):
-        x_new = a1 + b1 / (x + 9.0) + c2 / ((x + 9.0) ** 2)
-        if abs(x_new - x) < 1e-15 * abs(x):
-            break
-        x = x_new
-    a3 = x
+    a3 = iterate_alpha_pp_counterterm(a1, a2, d.L_rest)
     return {
         "alpha_PP_step0_shell_fill": a0,
         "alpha_PP_step1_blade_subtraction": a1,
@@ -2588,9 +2594,9 @@ def plot_all(d: DerivedConstants, axioms: Axioms,
     for i, (name, stmt, consequence) in enumerate(closures):
         ax.text(0.02, 0.85 - 0.22 * i, name, fontsize=12, fontweight="bold",
                 color="#1a2a4a", transform=ax.transAxes)
-        ax.text(0.22, 0.85 - 0.22 * i, stmt, fontsize=10,
+        ax.text(0.31, 0.85 - 0.22 * i, stmt, fontsize=10,
                 color="#333333", transform=ax.transAxes)
-        ax.text(0.62, 0.85 - 0.22 * i, consequence, fontsize=9, style="italic",
+        ax.text(0.68, 0.85 - 0.22 * i, consequence, fontsize=9, style="italic",
                 color="#555555", transform=ax.transAxes)
     ax.set_xlim(0, 1); ax.set_ylim(0, 1)
     ax.axis("off")

@@ -679,7 +679,7 @@ def chart_closure_diagram():
          'Closed integral A_ij dS^j = 0.\nNoether preserved on S_ij.',
          COL_GOLD),
         (6.0, 0.7, 4.5, 2.3, 'Information Closure',
-         'route cost -> {Lindblad,\ngravity, time, CMB,\nBorn, Bell/CHSH}\n\n'
+         'route cost -> {Lindblad, Landauer,\ngravity, time, CMB,\nBorn, Bell/CHSH, alpha_bare}\n\n'
          'Single currency across\nall physical sectors.',
          COL_RED),
     ]
