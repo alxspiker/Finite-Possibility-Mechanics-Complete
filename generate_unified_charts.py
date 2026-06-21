@@ -76,108 +76,107 @@ def save_fig(fig, name, dpi=180):
 # Chart 1: The Master Chain
 # =============================================================================
 def chart_master_chain():
-    fig, ax = plt.subplots(figsize=(14, 6.5), constrained_layout=True)
-    ax.set_xlim(0, 14)
-    ax.set_ylim(0, 6.5)
+    fig, ax = plt.subplots(figsize=(15.5, 7.2), constrained_layout=True)
+    ax.set_xlim(0, 16)
+    ax.set_ylim(0, 7.2)
     ax.axis('off')
 
-    # Title
-    ax.text(7, 6.2, 'The FPM Master Chain: From Route Tensor to Cosmological Horizon',
+    ax.text(8, 6.9, 'The FPM Master Chain: Runtime Ledger to Physical Bridges',
             ha='center', va='top', fontsize=14, fontweight='bold', color=COL_PRIMARY)
+    ax.text(8, 6.48,
+            'Routing tensor -> native carrier -> viscosity -> route cost -> ledger + carrier update -> next tick + bridges.',
+            ha='center', va='top', fontsize=8.8, color=COL_GREY, style='italic')
 
     # Stage boxes (label, x, y, w, h, color, layer)
     stages = [
-        # Layer 1: Substrate (left)
-        ('R_ij\n(9 directed\nchannels)', 0.3, 3.5, 1.7, 1.3, COL_BLUE, 'L1'),
-        ('S_9, K_1\n(shear, trace)', 2.2, 3.5, 1.5, 1.3, COL_BLUE, 'L1'),
-        # Layer 2: Viscosity
-        ('Phi_Omega\n(mobility)', 3.9, 3.5, 1.4, 1.3, COL_GREEN, 'L2'),
-        ('p_t\n(route prob)', 5.5, 3.5, 1.2, 1.3, COL_GREEN, 'L2'),
-        ('H_N, S_N\n(entropy,\nbalance)', 6.9, 3.5, 1.4, 1.3, COL_GREEN, 'L2'),
-        ('A_N -> C_N\n(weighted\nambiguity)', 8.5, 3.5, 1.4, 1.3, COL_GREEN, 'L2'),
-        ('kappa_t\n(coherence\npersistence)', 10.1, 3.5, 1.4, 1.3, COL_GREEN, 'L2'),
-        ('Omega_t\n(viscosity)', 11.7, 3.5, 1.4, 1.3, COL_GREEN, 'L2'),
-        # Layer 3: Dynamics (middle)
+        ('R_ij\nfull route tensor\n+ torsion links', 0.3, 4.15, 1.75, 1.25, COL_BLUE, 'L1'),
+        ('S_9, K_1\nscalar invariants\n(full R retained)', 2.3, 4.15, 1.8, 1.25, COL_BLUE, 'L1'),
+        ('Phi_Omega\nmobility map', 4.35, 4.15, 1.45, 1.25, COL_GREEN, 'L2'),
+        ('psi_t\n9-channel\ncomplex carrier', 6.05, 4.15, 1.65, 1.25, COL_GREEN, 'L2'),
+        ('p_t = |psi_t|^2\nobservable\nroute mass', 7.95, 4.15, 1.65, 1.25, COL_GREEN, 'L2'),
+        ('H_N, S_N\nentropy +\nbalance', 9.85, 4.15, 1.45, 1.25, COL_GREEN, 'L2'),
+        ('A_N -> C_N\nweighted\nambiguity', 11.55, 4.15, 1.45, 1.25, COL_GREEN, 'L2'),
+        ('kappa_t, Omega_t\npersistence +\nviscosity', 13.25, 4.15, 1.75, 1.25, COL_GREEN, 'L2'),
         ('L_t = C^sem + C^geo + lambda|dOmega|\n(per-tick Lagrangian, AxCore-derived)',
-         3.5, 1.6, 6.5, 1.1, COL_GOLD, 'L3'),
-        ('E_{t+1} = clip(E_t - L_t + r, 0, E_max)\n(closed energy ledger)',
-         3.5, 0.2, 6.5, 1.1, COL_GOLD, 'L3'),
-        # Layer 5/6: Bridges (right)
-        ('Bridges:\nLandauer, Gravity,\nTime, CMB,\nBorn, Bell/CHSH',
-         11.2, 1.6, 2.5, 2.3, COL_RED, 'L5'),
+         4.45, 2.55, 6.6, 0.95, COL_GOLD, 'L3'),
+        ('E_{t+1} = clip(E_t - L_t + r, 0, E_max)\n+ boundary ledger: exhaust / starvation',
+         4.45, 1.35, 6.6, 0.95, COL_GOLD, 'L3'),
+        ('psi_{t+1} = psi_t exp(-i theta L_i,t)\nZOMBIE: finite LRM / joint torsion quantization',
+         4.45, 0.15, 6.6, 0.95, COL_GOLD, 'L3'),
+        ('Physical bridges:\nLindblad, Landauer,\nGravity, Time, CMB,\nBorn, Bell/CHSH',
+         12.35, 1.2, 3.0, 2.15, COL_RED, 'L5'),
     ]
 
     for label, x, y, w, h, color, layer in stages:
         rect = FancyBboxPatch((x, y), w, h, boxstyle='round,pad=0.04',
-                              edgecolor=color, facecolor=color + '20',
-                              linewidth=1.8)
+                              edgecolor=color, facecolor=light_fill(color, 0.90),
+                              linewidth=1.8, zorder=3)
         ax.add_patch(rect)
         ax.text(x + w / 2, y + h / 2, label, ha='center', va='center',
-                fontsize=8.5, color=COL_PRIMARY, fontweight='bold')
+                fontsize=8.0, color=COL_PRIMARY, fontweight='bold', zorder=5)
 
-    # Arrows (start_x, start_y, end_x, end_y, color, label=None)
-    arrows = [
-        (2.0, 4.15, 2.2, 4.15, COL_BLUE),
-        (3.7, 4.15, 3.9, 4.15, COL_BLUE),
-        (5.3, 4.15, 5.5, 4.15, COL_GREEN),
-        (6.7, 4.15, 6.9, 4.15, COL_GREEN),
-        (8.3, 4.15, 8.5, 4.15, COL_GREEN),
-        (9.9, 4.15, 10.1, 4.15, COL_GREEN),
-        (11.5, 4.15, 11.7, 4.15, COL_GREEN),
-        # Down from Omega to L
-        (12.4, 3.5, 9.5, 2.7, COL_GOLD, 'dOmega'),
-        # L to E
-        (6.75, 1.6, 6.75, 1.3, COL_GOLD),
-        # E back up to R_ij (loop)
-        (3.5, 0.75, 1.15, 3.5, COL_GOLD, 'next tick'),
-        # Omega to bridges
-        (12.4, 3.5, 12.45, 2.7, COL_RED, 'dOmega/dr'),
-        # L_t to bridges
-        (10.0, 2.15, 11.2, 2.4, COL_RED, 'Landauer'),
-    ]
-    for arr in arrows:
-        if len(arr) == 5:
-            sx, sy, ex, ey, c = arr
-            lbl = None
-        else:
-            sx, sy, ex, ey, c, lbl = arr
+    def add_arrow(start, end, color, label=None, rad=0.0, lw=1.8, z=4):
+        sx, sy = start
+        ex, ey = end
         arrow = FancyArrowPatch((sx, sy), (ex, ey),
-                                arrowstyle='->', color=c,
-                                mutation_scale=14, linewidth=1.5,
-                                connectionstyle='arc3,rad=0.0' if abs(sy-ey) < 0.3 else 'arc3,rad=0.2')
+                                arrowstyle='-|>', color=color,
+                                mutation_scale=16, linewidth=lw,
+                                shrinkA=3, shrinkB=3,
+                                connectionstyle=f'arc3,rad={rad}',
+                                zorder=z)
         ax.add_patch(arrow)
-        if lbl:
+        if label:
             mx, my = (sx + ex) / 2, (sy + ey) / 2
-            ax.text(mx, my + 0.15, lbl, fontsize=7, color=c, ha='center',
-                    style='italic', fontweight='bold')
+            ax.text(mx, my + 0.14, label, fontsize=7, color=color,
+                    ha='center', style='italic', fontweight='bold', zorder=6)
 
-    # Layer labels on the left
-    for lbl, y, c in [('Layer 1: Substrate', 4.15, COL_BLUE),
-                      ('Layer 2: Viscosity', 4.15, COL_GREEN),
-                      ('Layer 3: Dynamics', 1.5, COL_GOLD),
-                      ('Layer 5/6: Bridges', 2.5, COL_RED)]:
-        pass  # already encoded in colors
+    # Top-row runtime chain.
+    y_mid = 4.78
+    segments = [
+        ((2.05, y_mid), (2.3, y_mid), COL_BLUE),
+        ((4.1, y_mid), (4.35, y_mid), COL_BLUE),
+        ((5.8, y_mid), (6.05, y_mid), COL_GREEN),
+        ((7.7, y_mid), (7.95, y_mid), COL_GREEN),
+        ((9.6, y_mid), (9.85, y_mid), COL_GREEN),
+        ((11.3, y_mid), (11.55, y_mid), COL_GREEN),
+        ((13.0, y_mid), (13.25, y_mid), COL_GREEN),
+    ]
+    for start, end, color in segments:
+        add_arrow(start, end, color)
+
+    # Route-cost dynamics.
+    add_arrow((14.1, 4.15), (9.8, 3.5), COL_GOLD,
+              label='Omega, dOmega', rad=0.18, lw=2.0)
+    add_arrow((7.75, 2.55), (7.75, 2.3), COL_GOLD, lw=2.0)
+    add_arrow((7.75, 1.35), (7.75, 1.1), COL_GOLD, lw=2.0)
+
+    # Feedback into the next tick carries ledger, carrier, cache, and links.
+    add_arrow((4.45, 0.62), (0.9, 4.15), COL_GOLD,
+              label='next tick: E, psi, b, Omega_prev, links',
+              rad=-0.34, lw=2.0)
+
+    # Bridge readouts are descendants of route cost, gradients, and quantization.
+    add_arrow((11.05, 3.02), (12.35, 2.65), COL_RED,
+              label='Landauer / L_t', rad=-0.05, lw=2.0)
+    add_arrow((14.05, 4.15), (13.9, 3.35), COL_RED,
+              label='grad Omega', rad=0.05, lw=2.0)
+    add_arrow((11.05, 0.62), (12.35, 1.55), COL_RED,
+              label='Born / Bell', rad=-0.15, lw=2.0)
 
     # Layer legend at bottom
-    legend_y = -0.05
+    legend_y = -0.08
     legend_items = [
-        ('L1: Substrate (R_ij, route links)', COL_BLUE),
-        ('L2: Viscosity field (Omega)', COL_GREEN),
-        ('L3: Per-tick dynamics (Lagrangian + ledger)', COL_GOLD),
-        ('L5/6: Physical bridges & cosmology', COL_RED),
+        ('L1: substrate and route tensor', COL_BLUE),
+        ('L2: carrier + viscosity pipeline', COL_GREEN),
+        ('L3: per-tick dynamics and closure', COL_GOLD),
+        ('L5/6: physical bridges', COL_RED),
     ]
     for i, (lbl, c) in enumerate(legend_items):
-        x_pos = 0.3 + i * 3.5
+        x_pos = 0.35 + i * 3.9
         rect = Rectangle((x_pos, legend_y), 0.25, 0.18, facecolor=c, edgecolor=c)
         ax.add_patch(rect)
         ax.text(x_pos + 0.32, legend_y + 0.09, lbl, fontsize=7.5,
                 va='center', color=COL_PRIMARY)
-
-    # Caption
-    ax.text(7, 5.65,
-            'A single computational pipeline: route tensor invariants feed the viscosity field, '
-            'which gates the Lagrangian cost, which closes the energy ledger, which seeds the next tick.',
-            ha='center', va='top', fontsize=8.5, color=COL_GREY, style='italic')
 
     return save_fig(fig, '01_master_chain.png')
 

@@ -727,16 +727,18 @@ def build_part_i():
     flow.append(Paragraph(
         "The strategic architecture of FPM is that <b>route cost</b> is the "
         "universal runtime currency, and that every physical phenomenon emerges "
-        "from a single derivation chain that starts at the routing tensor and "
-        "ends at the cosmological horizon. The diagram below shows the chain "
-        "in full:",
+        "from a single derivation chain that starts at the routing tensor, "
+        "runs through the native carrier and closed energy ledger, and "
+        "branches into the physical bridge layer. The diagram below shows the "
+        "chain in full:",
         styles['Body']))
     flow.extend(chart_img(os.path.join(CHARTS_DIR, '01_master_chain.png'),
                           width_cm=16.0,
-                          caption_text="Figure 1. The FPM master chain. Route tensor invariants "
-                                       "feed the viscosity field, which gates the per-tick "
-                                       "Lagrangian, which closes the energy ledger, which "
-                                       "seeds the next tick and propagates into all physical bridges."))
+                          caption_text="Figure 1. The FPM master chain. The route tensor feeds "
+                                       "the native carrier and viscosity pipeline; route cost "
+                                       "then updates both the closed energy ledger and the "
+                                       "complex carrier before seeding the next tick and the "
+                                       "physical bridge layer."))
 
     flow.append(Paragraph("1.2 What the Framework Replaces", styles['H2']))
     flow.append(Paragraph(
