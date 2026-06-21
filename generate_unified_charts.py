@@ -469,103 +469,169 @@ def chart_viscosity_law():
 # Chart 5: Galaxy Rotation Curve
 # =============================================================================
 def chart_galaxy_rotation():
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5.5), constrained_layout=True)
+    fig, axes = plt.subplots(1, 3, figsize=(16.5, 5.7), constrained_layout=True)
 
-    # Galaxy parameters
-    R_c = 2.0  # kpc
-    r_c = 0.3  # kpc
-    R_d = 120.0  # kpc
-    V_inf = 220.0  # km/s
-    sqrt_Gamma_DeltaOmega_c = 100.0  # km/s
-
-    r = np.linspace(0.5, 250, 500)
-
-    # FPM finite-disk curve
-    # v_ax^2 = Gamma * r * [DeltaOmega_c/R_c * exp(-r/R_c) + DeltaOmega_d * R_d / ((r+r_c)(r+r_c+R_d))]
-    # Use parameters from manuscript
-    DeltaOmega_c = 0.35 * 0.4  # core viscosity enhancement
-    DeltaOmega_d = 0.35 * 0.6  # disk viscosity enhancement
-    Gamma = (V_inf ** 2) / DeltaOmega_d  # ensures v(inf) -> V_inf
-
-    term_c = (DeltaOmega_c / R_c) * np.exp(-r / R_c)
-    term_d = (DeltaOmega_d * R_d) / ((r + r_c) * (r + r_c + R_d))
-    g_ax = Gamma * (term_c + term_d)
-    v_fpm = np.sqrt(np.maximum(Gamma * r * (term_c + term_d), 0))
-
-    # Newtonian baryon-only curve (Keplerian past disk)
-    M_disk = 6e10  # solar masses
-    # v_Newt = sqrt(G M / r) approximately
-    # Use SPARC-like normalization
-    v_newt = V_inf * np.sqrt(R_d / (r + R_d * 0.1)) * np.exp(-r / (2 * R_d))
-    v_newt = np.minimum(v_newt, 250)
-
-    # MOND-like flat curve
-    v_mond = np.ones_like(r) * 200
-
+    # Repaired FPM SPARC bridge:
+    # nu_FPM(x)=1+Omega_max/sqrt(x+r_tensor)/(1+E_zombie*x^2)^beta.
+    # The x^2 factor is the scalar field-energy load x.x required to compare
+    # a directed acceleration vector against the scalar thermodynamic ledger.
+    x = np.logspace(-3, 2, 500)
+    Omega_max = 0.85
+    r_tensor = 0.003485963132081853
+    E_zombie = 0.20 * (2.0 / 3.0)
+    beta = 1.8
+    nu_fpm = 1.0 + Omega_max / np.sqrt(x + r_tensor) / ((1.0 + E_zombie * x ** 2) ** beta)
+    nu_mond = 1.0 / (1.0 - np.exp(-np.sqrt(x)))
     ax = axes[0]
-    ax.plot(r, v_fpm, color=COL_PRIMARY, linewidth=2.5, label='FPM (finite-disk ledger)')
-    ax.plot(r, v_newt, color=COL_GREY, linewidth=1.8, linestyle='--',
-            label='Baryon-only (Newtonian)')
-    ax.plot(r, v_mond, color=COL_RED, linewidth=1.5, linestyle=':',
-            label='MOND-like (phenomenological)')
+    ax.loglog(x, nu_fpm, color=COL_PRIMARY, linewidth=2.5,
+              label='FPM finite-substrate response')
+    ax.loglog(x, nu_mond, color=COL_GREEN, linewidth=1.8, linestyle='--',
+              label='RAR / MOND comparison')
+    ax.axvline(r_tensor, color=COL_GOLD, linestyle=':', alpha=0.75, linewidth=1.2)
+    ax.axvline(1.0, color=COL_GREY, linestyle=':', alpha=0.7, linewidth=1.0)
+    ax.text(0.004, 18.5, 'finite-substrate\nregularization',
+            fontsize=8, color=COL_GOLD, fontweight='bold')
+    ax.text(0.05, 6.5, 'thermodynamic\nx^-1/2 zone',
+            fontsize=8, color=COL_PRIMARY, fontweight='bold')
+    ax.annotate('field-energy cutoff\nE_zombie x^2',
+                xy=(3.0, 1.7), xytext=(8.0, 4.0),
+                arrowprops=dict(arrowstyle='->', color=COL_RED, lw=1.2),
+                fontsize=8, color=COL_RED, fontweight='bold')
+    ax.text(1.2, 8.0, 'x = 1', fontsize=8, color=COL_GREY, fontweight='bold')
 
-    # Mark the three regimes
-    ax.axvspan(0.5, 5, alpha=0.08, color=COL_GOLD)
-    ax.axvspan(5, 60, alpha=0.08, color=COL_GREEN)
-    ax.axvspan(60, 250, alpha=0.08, color=COL_BLUE)
-
-    label_box = dict(boxstyle='round,pad=0.2', facecolor='white',
-                     edgecolor='none', alpha=0.8)
-    ax.text(8, 230, 'Inner\ncore\nrise', ha='center', fontsize=8,
-            color=COL_GOLD, fontweight='bold', bbox=label_box)
-    ax.text(43, 258, 'Flat branch\n(r_c << r << R_d)', ha='center', fontsize=8,
-            color=COL_GREEN, fontweight='bold', bbox=label_box)
-    ax.text(150, 250, 'Rollover\n(r >> R_d)', ha='center', fontsize=8,
-            color=COL_BLUE, fontweight='bold')
-
-    # Mark rollover prediction
-    ax.axvline(240, color=COL_ACCENT, linestyle=':', alpha=0.5)
-    ax.axvline(30, color=COL_ACCENT, linestyle=':', alpha=0.5)
-    ax.annotate('', xy=(240, 130), xytext=(30, 130),
-                arrowprops=dict(arrowstyle='<->', color=COL_ACCENT, lw=1.2))
-    ax.text(135, 138, 'v(240)/v(30) = 0.6487\nconditional on R_d = 120 kpc',
-            ha='center', fontsize=8.5, color=COL_ACCENT, fontweight='bold')
-
-    ax.set_xlabel('Radius r (kpc)', fontsize=10)
-    ax.set_ylabel('Circular speed v(r) (km/s)', fontsize=10)
-    ax.set_title('FPM Finite-Disk Galaxy Rotation Curve\n'
-                 'Operational profile for massive spiral boundary condition',
+    ax.set_xlabel('x = g_bar / a0', fontsize=10)
+    ax.set_ylabel('Susceptibility nu(x) = v^2 / v_bar^2', fontsize=10)
+    ax.set_title('A. Zero-Fit Susceptibility Shape\n'
+                 'MOND-like envelope from route-cost constants',
                  fontsize=10, color=COL_PRIMARY)
     ax.legend(fontsize=8.5, loc='lower right')
-    ax.grid(True, alpha=0.3)
-    ax.set_xlim(0, 250)
-    ax.set_ylim(0, 280)
+    ax.grid(True, alpha=0.3, which='both')
 
-    # Right: SPARC audit summary
+    # Center: point residual audit by baryonic acceleration.
     ax = axes[1]
-    methods = ['Baryon-only', 'legacy FPM\n(fitted eta)', 'FPM single-\nsource kernel',
-               'FPM split-\nsource stress', 'RAR / MOND\n(fixed)']
-    rmse = [46.79, 318.14, 23.94, 13.65, 11.72]
-    colors = [COL_GREY, COL_RED, COL_GOLD, COL_BLUE, COL_GREEN]
+    plotted_residuals = False
+    try:
+        from fpm_simulator import (
+            SPARC_A0_KM2_S2_PER_KPC,
+            Axioms,
+            derive_all,
+            find_sparc_data_dir,
+            _parse_sparc_master,
+            _parse_sparc_rotmod,
+            fpm_gravity_susceptibility,
+            mond_rar_susceptibility,
+        )
 
-    bars = ax.barh(methods, rmse, color=colors, alpha=0.85, edgecolor='black', linewidth=0.5)
+        data_dir = find_sparc_data_dir()
+        if data_dir is not None:
+            d_local = derive_all(Axioms())
+            x_points = []
+            residual_fpm = []
+            residual_mond = []
+            for name, info in sorted(_parse_sparc_master(data_dir).items()):
+                if info["Q"] != 1:
+                    continue
+                rows = _parse_sparc_rotmod(data_dir, name)
+                if len(rows) < 5:
+                    continue
+                for r_kpc, vobs, _err_v, vgas, vdisk, vbul in rows:
+                    vbar_sq = (
+                        max(0.0, vgas * abs(vgas))
+                        + max(0.0, 0.5 * vdisk * abs(vdisk))
+                        + max(0.0, 0.7 * vbul * abs(vbul))
+                    )
+                    if r_kpc <= 0.0 or vbar_sq <= 0.0:
+                        continue
+                    x_val = max(1e-12, (vbar_sq / r_kpc) / SPARC_A0_KM2_S2_PER_KPC)
+                    v_fpm = math.sqrt(max(0.0, vbar_sq * fpm_gravity_susceptibility(x_val, d_local)))
+                    v_mond = math.sqrt(max(0.0, vbar_sq * mond_rar_susceptibility(x_val)))
+                    x_points.append(x_val)
+                    residual_fpm.append(v_fpm - vobs)
+                    residual_mond.append(v_mond - vobs)
+            if x_points:
+                ax.scatter(x_points, residual_fpm, s=8, alpha=0.38,
+                           color=COL_PRIMARY, edgecolors='none', label='FPM residual')
+                ax.scatter(x_points, residual_mond, s=8, alpha=0.30,
+                           color=COL_GREEN, edgecolors='none', label='RAR/MOND residual')
+                plotted_residuals = True
+    except Exception as exc:
+        ax.text(0.5, 0.5, f'Residual audit unavailable:\n{exc}',
+                transform=ax.transAxes, ha='center', va='center',
+                fontsize=8, color=COL_RED)
+
+    if plotted_residuals:
+        ax.axhline(0, color=COL_GREY, linewidth=1.0)
+        ax.set_xscale('log')
+        ax.set_xlabel('x = g_bar / a0', fontsize=10)
+        ax.set_ylabel('Velocity residual V_pred - V_obs (km/s)', fontsize=10)
+        ax.set_title('B. SPARC Residual Audit\n'
+                     'same Q=1 local sample, point-wise residuals',
+                     fontsize=10, color=COL_PRIMARY)
+        ax.legend(fontsize=8, loc='upper right')
+        ax.grid(True, alpha=0.25, which='both')
+        ax.set_ylim(-70, 70)
+    else:
+        ax.axis('off')
+        ax.text(0.5, 0.58, 'SPARC residual panel requires\nlocal_data/Rotmod_LTG',
+                transform=ax.transAxes, ha='center', va='center',
+                fontsize=10, color=COL_PRIMARY, fontweight='bold')
+        ax.text(0.5, 0.40, 'The susceptibility and RMSE summary\nremain zero-fit fallbacks.',
+                transform=ax.transAxes, ha='center', va='center',
+                fontsize=8, color=COL_GREY)
+
+    # Right: constants hierarchy and RMSE summary
+    ax = axes[2]
+    ax.axis('off')
+    ax.set_title('C. Constants Hierarchy\n'
+                 'pre-derived inputs, no floated SPARC parameters',
+                 fontsize=10, color=COL_PRIMARY, pad=10)
+
+    rows = [
+        ('e_exp + chi_arrow', '-0.5', 'low-accel slope'),
+        ('Omega_max', '0.85', 'amplitude ceiling'),
+        ('r_tensor', '0.003486', 'zero-mass regularizer'),
+        ('E_zombie', '0.1333', 'field-energy gate'),
+        ('beta', '1.8', 'channel throttle'),
+    ]
+    x0, y0 = 0.02, 0.86
+    widths = [0.40, 0.22, 0.34]
+    headers = ['Constant', 'Value', 'Bridge role']
+    for j, header in enumerate(headers):
+        ax.text(x0 + sum(widths[:j]), y0, header, transform=ax.transAxes,
+                fontsize=8.2, fontweight='bold', color='white',
+                bbox=dict(boxstyle='square,pad=0.25', facecolor=COL_PRIMARY,
+                          edgecolor=COL_PRIMARY))
+    for i, row in enumerate(rows):
+        y = y0 - 0.10 * (i + 1)
+        fill = '#f6f7f8' if i % 2 == 0 else 'white'
+        ax.add_patch(Rectangle((x0 - 0.005, y - 0.03), 0.96, 0.07,
+                               transform=ax.transAxes, facecolor=fill,
+                               edgecolor='#dddddd', linewidth=0.5))
+        for j, cell in enumerate(row):
+            ax.text(x0 + sum(widths[:j]), y, cell, transform=ax.transAxes,
+                    fontsize=7.7, color=COL_PRIMARY, va='center',
+                    fontweight='bold' if j == 0 else 'normal')
+
+    # Compact RMSE summary below the table.
+    methods = ['FPM single-\nsource kernel', 'FPM split-\nsource stress',
+               'FPM repaired\nx^2 bridge', 'RAR / MOND\n(fixed)']
+    rmse = [23.94, 13.65, 11.87, 11.72]
+    colors = [COL_GOLD, COL_BLUE, COL_PRIMARY, COL_GREEN]
+    inset = ax.inset_axes([0.08, 0.03, 0.86, 0.30])
+    y_pos = np.arange(len(methods))
+    bars = inset.barh(y_pos, rmse, color=colors, alpha=0.85,
+                      edgecolor='black', linewidth=0.5)
+    inset.set_yticks(y_pos)
+    inset.set_yticklabels(methods)
     for bar, val in zip(bars, rmse):
-        ax.text(bar.get_width() + 1, bar.get_y() + bar.get_height() / 2,
-                f'{val:.2f} km/s', va='center', fontsize=9, color=COL_PRIMARY,
+        inset.text(bar.get_width() + 0.8, bar.get_y() + bar.get_height() / 2,
+                f'{val:.2f}', va='center', fontsize=7.5, color=COL_PRIMARY,
                 fontweight='bold')
-
-    ax.axvline(12, color=COL_GREEN, linestyle=':', alpha=0.6, linewidth=1.5)
-    ax.text(14.0, 4.18, 'competitive threshold\n12 km/s', fontsize=8,
-            color=COL_GREEN, fontweight='bold',
-            bbox=dict(boxstyle='round,pad=0.2', facecolor='white',
-                      edgecolor='none', alpha=0.85))
-
-    ax.set_xlabel('Median RMSE (km/s)', fontsize=10)
-    ax.set_title('SPARC R2 Audit (Q=1, 99 galaxies)\n'
-                 'FPM is partially competitive after split-source stress test',
-                 fontsize=10, color=COL_PRIMARY)
-    ax.grid(True, alpha=0.3, axis='x')
-    ax.set_xlim(0, 350)
+    inset.axvline(12, color=COL_GREEN, linestyle=':', alpha=0.6, linewidth=1.2)
+    inset.set_xlabel('Median RMSE (km/s)', fontsize=7.5)
+    inset.tick_params(axis='both', labelsize=7.0)
+    inset.grid(True, alpha=0.25, axis='x')
+    inset.set_xlim(0, 27)
 
     return save_fig(fig, '05_galaxy_rotation.png')
 

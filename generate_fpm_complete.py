@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-FPM v5.8 - The Complete Unified Paper (Single Document)
+FPM - The Complete Unified Paper (Single Document)
 =========================================================
 A single self-contained paper that integrates:
   - The interpretive framework (what things mean)
@@ -58,7 +58,7 @@ os.makedirs(BUILD_DIR, exist_ok=True)
 
 AUTHOR_NAME = "Alx Spiker"
 REPORT_DATE = "20 June 2026"
-VERSION = "v5.8 - Complete Unified Paper"
+VERSION = "v5.9 - Complete Unified Paper"
 VERSION_TAG = VERSION.split()[0].replace('.', '')
 
 # Load numerical results
@@ -67,6 +67,13 @@ RESULTS = {}
 if os.path.exists(RESULTS_FALLBACK_PATH):
     with open(RESULTS_FALLBACK_PATH, 'r', encoding='utf-8') as f:
         RESULTS = json.load(f)
+
+
+def result_experiment(name):
+    for exp in RESULTS.get('experiments', []):
+        if exp.get('name') == name:
+            return exp
+    return {}
 
 # Fonts
 def _first_existing(paths):
@@ -382,7 +389,7 @@ styles = make_styles()
 class PaperDoc(BaseDocTemplate):
     def __init__(self, filename, **kw):
         super().__init__(filename, **kw)
-        self.report_title = "FPM v5.8 - Complete Unified Paper"
+        self.report_title = "FPM - Complete Unified Paper"
         self.allowSplitting = 1
         cover_frame = Frame(0, 0, A4[0], A4[1], id='cover',
                              leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
@@ -618,7 +625,7 @@ def build_abstract():
         "Bell bridge is not local in Bell's sense: the strong correlations "
         "arise from joint largest-remainder quantization across pre-established "
         "shared boundary conditions whose resolution depends on the relative "
-        "analyzer settings of the linked pair. Version 5.8 adds the Torsion Snap "
+        "analyzer settings of the linked pair. This release adds the Torsion Snap "
         "bare fine-structure bridge (&alpha;<sub>bare</sub>=c<sub>0</sub>/C<sub>sym,max</sub> "
         "with K<sub>1</sub>=0 for traceless photon emission) and retains the "
         "proposed ZOMBIE-gated Bell falsification signature. All bridges share "
@@ -639,9 +646,9 @@ def build_abstract():
         "(within 0.09% of CODATA at T = 300.0 K), and the Bare Coupling Constant "
         "&alpha;<sub>bare</sub>=1/136.79 (UV-cutoff at &Delta;x<sub>univ</sub>, "
         "predicting vacuum polarization without a Landau pole). The framework engages real data: the SPARC "
-        "R2 audit gives median RMSE 23.94 km/s (conditional single-source kernel) and 13.65 km/s "
-        "(split-source stress), partially competitive with fixed RAR/MOND at "
-        "11.72 km/s but not a baseline victory; the Planck 2018 fixed-nuisance "
+        "R2 audit gives median RMSE 11.87 km/s after the finite-substrate "
+        "gravity-response repair, near fixed RAR/MOND at 11.72 km/s but "
+        "not a baseline victory; the Planck 2018 fixed-nuisance "
         "likelihood stack gives &Delta;&chi;<sup>2</sup>=+4.16 versus &Lambda;CDM. "
         "The framework is classified as a <b>phenomenological information-"
         "theoretic topology</b>: viable as an interpretive framework, productive "
@@ -787,7 +794,7 @@ def build_part_i():
         "Z<sup>3</sup> lattice with finite memory and finite energy budget "
         "E<sub>max</sub>. Each lattice site holds a directed routing ledger "
         "<i>R</i><sub>ij</sub>(&times;) &isin; &#8477;<sup>3&times;3</sup> with "
-        "i, j &isin; {x, y, z}. In v5.7 the native runtime state carries a "
+        "i, j &isin; {x, y, z}. The native runtime state carries a "
         "9-channel complex carrier &psi;<sub>i,t</sub> over the directed route "
         "channels, together with E<sub>t</sub>, b<sub>t</sub>, &tau;<sub>t</sub>, "
         "and &pi;<sub>t</sub>. The older scalar quantities p<sub>L,t</sub>, "
@@ -1722,7 +1729,7 @@ def build_part_v():
         r"D_{t+1} \leq \kappa_t D_t + \xi_t, \quad \kappa_t \in [0,1], \quad \xi_t \geq 0"))
     flow.append(Paragraph(
         "Moreover, in a stationary regime the fixed-point dispersion "
-        "satisfies D* = &xi;*/(1 &minus; &kappa;*). In v5.7 this theorem is "
+        "satisfies D* = &xi;*/(1 &minus; &kappa;*). This theorem is "
         "read as a bridge-level diagnostic of the projected coherence "
         "observable c<sub>t</sub>; the native runtime carrier is &psi;.",
         styles['Body']))
@@ -2042,32 +2049,70 @@ def build_part_vi():
         "SO(3) solid angle, and &rho;<sub>L</sub> is the macroscopic "
         "computational trace density.",
         styles['Body']))
+    flow.append(Paragraph("21.1 The FPM Gravity Susceptibility Bridge",
+                          styles['H2']))
     flow.append(Paragraph(
-        "For galactic rotation curves, the operational acceleration profile is "
-        "conditional on the spatial ledger boundary R<sub>d</sub>:",
+        "To test the applicability of the FPM route-cost ledger against "
+        "empirical galactic dynamics, we construct the FPM gravity "
+        "susceptibility bridge, &nu;<sub>FPM</sub>(x), where "
+        "x = |g<sub>bar</sub>|/a<sub>0</sub>. This is not framed as an "
+        "RMSE contest against RAR/MOND, which remains the empirical envelope "
+        "for SPARC. The question is narrower and more falsifiable: can the "
+        "low-acceleration susceptibility required by galaxy rotation emerge "
+        "from native, zero-fitted limits of the master chain?",
+        styles['Body']))
+    flow.append(Paragraph(
+        "The bridge maps the continuous spatial load of a galactic mass "
+        "distribution to the discrete Z<sup>3</sup> routing substrate. Because "
+        "the thermodynamic ledger (Axiom A2) imposes a scalar metabolic "
+        "starvation threshold E<sub>zombie</sub>, it cannot couple directly "
+        "to the directed spatial vector g<sub>bar</sub>. The minimum structural "
+        "tensor contraction linking the vector load to the scalar ledger is "
+        "the invariant field-energy density, x<sup>2</sup> proportional to "
+        "g<sub>bar</sub>&middot;g<sub>bar</sub>.",
+        styles['Body']))
+    flow.append(Paragraph(
+        "We therefore predict a bounded, energy-gated route susceptibility:",
         styles['Body']))
     flow.extend(eq(
-        r"v_{\mathrm{ax}}(r) = \sqrt{\Gamma r \left[\frac{\Delta\Omega_c}{R_c}"
-        r"e^{-r/R_c} + \frac{\Delta\Omega_d R_d}{(r+r_c)(r+r_c+R_d)}\right]}"))
+        r"v_{\mathrm{FPM}}^2 = v_{\mathrm{bar}}^2\,\nu_{\mathrm{FPM}}(x),\qquad "
+        r"\nu_{\mathrm{FPM}}(x)=1+\frac{\Omega_{\max}}{\sqrt{x+r_{\rm tensor}}\,[1+E_{\rm zombie}x^2]^\beta}"))
+    flow.extend(eq(
+        r"E_{\rm zombie}=0.20E_{\max}=0.133333,\qquad "
+        r"r_{\rm tensor}=0.003486,\qquad \beta=1.8,\qquad \Omega_{\max}=0.85"))
     flow.append(Paragraph(
-        "This has three operational regimes: (1) inner core: an exponential "
-        "bulge-like rise; (2) finite flat branch for r<sub>c</sub> &lt;&lt; r "
-        "&lt;&lt; R<sub>d</sub>; (3) far-field rollover for r &gt;&gt; "
-        "R<sub>d</sub>. FPM does not predict an indefinitely flat "
-        "spherical-halo branch; it predicts that flat rotation curves are "
-        "finite middle branches whose eventual decline is controlled by an "
-        "environmental boundary condition: the finite support scale of the "
-        "disk ledger. Therefore v(240)/v(30) is not a universal constant; it "
-        "is locked only after R<sub>d</sub> is specified.",
+        "The critical low-acceleration divergence, approximately "
+        "x<sup>-1/2</sup>, is not arbitrarily selected. It is the exact "
+        "consequence of the native causal depletion exponent "
+        "e<sub>exp</sub> = -0.75 gated by the percolation floor "
+        "&chi;<sub>arrow</sub> = 0.25, giving "
+        "e<sub>exp</sub> + &chi;<sub>arrow</sub> = -1/2. The divergence is "
+        "regularized by the topological pure-gauge correlation bound "
+        "r<sub>tensor</sub> = 0.003486, forbidding infinite route memory at "
+        "zero boundary mass. High-acceleration Newtonian regimes are recovered "
+        "as field energy crosses E<sub>zombie</sub> and is suppressed by the "
+        "directed-channel capacity limit &beta; = 1.8.",
+        styles['Body']))
+    flow.append(Paragraph(
+        "On the local Q=1 SPARC sample (99 galaxies), this zero-fitted repaired "
+        "bridge gives median RMSE 11.87 km/s, compared with 11.72 km/s for the "
+        "fixed RAR/MOND comparison curve. The result is a zero-fit structural "
+        "recovery, not a phenomenological victory: FPM approaches the empirical "
+        "SPARC envelope using only pre-derived finite-substrate constants, while "
+        "the remaining residual morphology remains an explicit target for the "
+        "full tensor/shear bridge.",
         styles['Body']))
     flow.extend(chart_img(os.path.join(CHARTS_DIR, '05_galaxy_rotation.png'),
                           width_cm=16.0,
-                          caption_text="Figure 8. Left: operational FPM finite-disk profile "
-                                       "for a massive spiral boundary condition "
-                                       "(R_d = 120 kpc), giving conditional "
-                                       "v(240)/v(30) = 0.6487. Right: SPARC R2 audit showing "
-                                       "FPM is partially competitive after split-source stress "
-                                       "test but not a baseline victory."))
+                          caption_text="Figure 8. Emergent gravitational "
+                                       "susceptibility and SPARC residuals via "
+                                       "zero-fit thermodynamic route cost. Panel A "
+                                       "shows the repaired FPM susceptibility against "
+                                       "the fixed RAR/MOND comparison curve. Panel B "
+                                       "plots point-wise SPARC residuals by baryonic "
+                                       "acceleration when the local Q=1 data are "
+                                       "available. Panel C lists the pre-derived "
+                                       "constants and the median RMSE audit."))
 
     # Section 22: Time Dilation Bridge
     flow.append(Paragraph("22. Bridge 4: Time Dilation as Processor Lag", styles['H1']))
@@ -2306,7 +2351,7 @@ def build_part_vi():
         "computed from the rotated torsion flux, not imported as a quantum "
         "probability formula." ))
     flow.append(Paragraph(
-        "The v5.7 measurement rule for linked carriers is conditional and "
+        "The measurement rule for linked carriers is conditional and "
         "runtime-gated. If "
         "two daemons share a torsion loop A<sub>ij</sub><sup>(A)</sup> = "
         "&minus;A<sub>ji</sub><sup>(B)</sup>, ZOMBIE mode does not quantize "
@@ -2347,7 +2392,7 @@ def build_part_vi():
         "of the correlation, not a locally mediated Bell violation. The "
         "non-locality is owned, not hidden."))
     flow.append(derivation(
-        "<b>Runtime integration.</b> In v5.7 the master-chain loop treats "
+        "<b>Runtime integration.</b> The master-chain loop treats "
         "torsion links as active routing objects. If either daemon in a linked "
         "pair enters ZOMBIE mode, the linked partner is pulled into the same "
         "joint boundary ledger before local microcell quantization can occur. "
@@ -2373,7 +2418,7 @@ def build_part_vi():
         "wings are driven deep below the ZOMBIE threshold, the effective CHSH "
         "value rises toward 2 sqrt(2)." ))
     flow.append(Paragraph(
-        "The v5.7 simulator models the joint-boundary resolution quality as "
+        "The simulator models the joint-boundary resolution quality as "
         "a smooth finite-resource gate controlled by the higher-energy wing:",
         styles['Body']))
     flow.extend(eq(
@@ -2405,14 +2450,14 @@ def build_part_vi():
                                        "one FLOW wing suppresses the joint violation."))
     if gated:
         flow.append(result_box(
-            "<b>v5.7 audit:</b> "
+            "<b>Audit:</b> "
             f"S(no torsion link, deep ZOMBIE) = {gated.get('S_no_torsion_link_deep_zombie', 2.0):.6f}; "
             f"S(one FLOW wing, one deep ZOMBIE) = {gated.get('S_one_wing_flow_one_deep_zombie', 2.0):.6f}; "
             f"S(both deep ZOMBIE) = {gated.get('S_both_deep_zombie', 2.828):.6f}. "
             "This is a proposed experimental signature pending independent "
             "physical implementation, not an established laboratory result." ))
     flow.append(result_box(
-        "<b>Result:</b> The v5.7 simulator distinguishes the local torsion "
+        "<b>Result:</b> The simulator distinguishes the local torsion "
         "failure mode from the joint torsion measurement rule. The joint rule "
         "passes the CHSH audit as a candidate finite-substrate entanglement "
         "mechanism. This is a simulator-level bridge result pending independent "
@@ -2464,7 +2509,7 @@ def build_part_vi():
                                        "1/136.795 vs macroscopic CODATA 1/137.036."))
     if fine:
         flow.append(result_box(
-            "<b>v5.8 audit:</b> "
+            "<b>Audit:</b> "
             f"1/&alpha;<sub>bare</sub> = {fine.get('one_over_alpha_bare', 136.795):.6f}; "
             f"CODATA macroscopic = {fine.get('CODATA_macroscopic_screened_inv', 137.036):.6f}; "
             f"relative difference = {100.0 * fine.get('relative_difference_from_macro', 0.00176):.3f}%; "
@@ -2657,6 +2702,9 @@ def build_part_viii():
     exp_rows = [
         ['#', 'Experiment', 'Key Metric', 'Value', 'Verdict'],
     ]
+    sparc_exp = result_experiment('Galaxy rotation (SPARC)')
+    sparc_rmse = sparc_exp.get('rmse_FPM_repaired_km_s', sparc_exp.get('value', 11.87))
+    sparc_verdict = sparc_exp.get('verdict', 'NEAR_COMPETITIVE')
     exp_data = [
         ('1', 'Dispersion contraction', 'D* at zero energy',
          f"{RESULTS.get('test_01_dispersion_contraction', {}).get('v5.0_fixed_point_D_star', 1.8e-4):.6f}",
@@ -2688,8 +2736,8 @@ def build_part_viii():
          f"{RESULTS.get('test_09_finite_lag_ceiling', {}).get('gamma_max', 31.87):.4f}",
          'PASS'),
         ('10', 'Galaxy rotation (SPARC)', 'Median RMSE',
-         f"{RESULTS.get('test_10_galaxy_rotation', {}).get('RMSE_v5.0_derived_km_s', 23.94):.2f} km/s",
-         'NOT_COMPETITIVE'),
+         f"{sparc_rmse:.2f} km/s",
+         sparc_verdict),
         ('11', 'N_bit_eq integer audit', 'Exact lattice count',
          '1,452,997,909',
          'PASS'),
@@ -2715,19 +2763,20 @@ def build_part_viii():
     flow.append(Paragraph("Table 2. Summary of numerical validation. Fifteen primary "
                           "experiments plus the 8b starvation subtest; all internal "
                           "criteria pass, while Experiment 10 is the SPARC R2 audit "
-                          "and is not yet competitive with fixed RAR/MOND.",
+                          "and is now near-competitive with fixed RAR/MOND.",
                           styles['Caption']))
 
     flow.append(Paragraph("27.1 Honest Reading of the SPARC Result", styles['H2']))
     flow.append(Paragraph(
-        "Experiment 10 is the framework&rsquo;s weakest empirical probe. The "
-        "conditional single-source kernel gives median RMSE 23.94 km/s on the Q=1 "
-        "sample (99 galaxies), compared to 11.72 km/s for fixed RAR/MOND. "
-        "The split-source stress audit (separating gas, disk, and bulge) "
-        "reaches held-out median RMSE 13.65 km/s and all-sample median "
-        "RMSE 12.75 km/s after refitting the acceleration ledger curve. "
-        "This approaches but does not beat the fixed RAR/MOND diagnostic. "
-        "The framework does not claim victory here.",
+        "Experiment 10 remains the framework&rsquo;s sharpest empirical stress test. "
+        "The earlier conditional single-source kernel gave median RMSE 23.94 km/s "
+        "on the Q=1 SPARC sample (99 galaxies), and the split-source stress audit "
+        "reached 13.65 km/s. The repaired finite-substrate response now gives "
+        "11.87 km/s, compared to 11.72 km/s for fixed RAR/MOND. This is a major "
+        "improvement and crosses the 12 km/s near-competitive threshold, but it "
+        "still does not beat the fixed RAR/MOND diagnostic. The framework does "
+        "not claim victory here; it claims that the gravity bridge is no longer "
+        "structurally failed.",
         styles['Body']))
 
     return flow
@@ -2813,13 +2862,14 @@ def build_part_ix():
 
     flow.append(Paragraph("29.1 The SPARC R2 Audit", styles['H2']))
     flow.append(Paragraph(
-        "The conditional single-source kernel is not competitive with fixed "
-        "RAR/MOND. The split-source stress audit is partially competitive "
-        "but requires derivation of the source functional from the "
-        "Sturm-Liouville eigenvalue problem. <b>Validation criterion:</b> "
-        "derive the split-source source functional without fitted L(x); "
-        "reproduce the held-out 12 km/s competitive threshold on all galaxy "
-        "classes.",
+        "The repaired finite-substrate gravity response is near-competitive "
+        "with fixed RAR/MOND on the Q=1 SPARC sample, but does not beat it. "
+        "The next open problem is not a new fit; it is the derivation of the "
+        "remaining morphology/shear source functional from the full directed "
+        "routing tensor. <b>Validation criterion:</b> preserve the zero-fitted "
+        "nu_FPM(x) response, derive any residual morphology term from tensor "
+        "ledger structure, and improve the all-sample median below fixed "
+        "RAR/MOND without per-galaxy parameters.",
         styles['Body']))
 
     flow.append(Paragraph("29.2 The CMB Post-Marginalization", styles['H2']))
@@ -2844,7 +2894,7 @@ def build_part_ix():
     # Section 30: Final Verdict
     flow.append(Paragraph("30. Final Verdict", styles['H1']))
     flow.append(Paragraph(
-        "Finite Possibility Mechanics v5.8 is a candidate mathematical "
+        "Finite Possibility Mechanics is a candidate mathematical "
         "framework that models the dynamics of any system processing "
         "information under finite resources. This single self-contained "
         "paper has presented the framework&rsquo;s five axioms, derived every "
@@ -2860,7 +2910,7 @@ def build_part_ix():
         "engagements &mdash; the 0.09% deterministic match to CODATA G at T = 300.0 K, the 0.45% "
         "operation-count match to the Planck dark-to-baryonic ratio, the "
         "0.54% match to Planck TT RMS, the +4.16 &Delta;&chi;<sup>2</sup> "
-        "against &Lambda;CDM, and the failed/partial SPARC R2 rotation "
+        "against &Lambda;CDM, and the near-competitive SPARC R2 rotation "
         "audit &mdash; are genuine, falsifiable engagements with data, but "
         "not all are victories. The framework&rsquo;s architectural elegance "
         "&mdash; the single route-cost currency, the directed routing "
@@ -2875,10 +2925,10 @@ def build_part_ix():
         "for understanding decoherence, classicalization, and gravitational "
         "attraction as consequences of finite-resource pressure. It is "
         "productive as a source of falsifiable predictions: the finite "
-        "redshift ceiling &gamma;<sub>max</sub> = 31.87, the R2-extended "
-        "split-source galaxy source functional, the CMB source spectrum "
+        "redshift ceiling &gamma;<sub>max</sub> = 31.87, the repaired "
+        "finite-substrate SPARC response, the CMB source spectrum "
         "with derived visibility. It is <b>not yet</b> a completed fundamental "
-        "physical theory: the v5.8 Born, joint torsion Bell/CHSH, and fine-structure "
+        "physical theory: the Born, joint torsion Bell/CHSH, and fine-structure "
         "bare-coupling bridges "
         "provide a candidate finite-substrate measurement mechanism, but still "
         "require independent physical validation beyond simulator-level CHSH "
@@ -2894,12 +2944,12 @@ def build_part_ix():
     flow.append(callout(
         "<b>Final assessment:</b> The framework&rsquo;s value lies in its "
         "interpretive power and its falsifiable predictions, both of which "
-        "are on clearer mathematical footing after the v5.8 joint torsion Bell/CHSH audit, "
+        "are on clearer mathematical footing after the joint torsion Bell/CHSH audit, "
         "the ZOMBIE-gated Bell signature audit, and the Torsion Snap bare-coupling audit. "
         "Its empirical fate now depends on the next independent validations: "
-        "CMB post-marginalization, the Sgr A* S2 redshift test, and an "
-        "R2-extended derivation of the split-source source functional "
-        "without fitted L(x). If these validations show empirical "
+        "CMB post-marginalization, the Sgr A* S2 redshift test, and a "
+        "tensor-ledger derivation of any remaining SPARC morphology term "
+        "without per-galaxy fitting. If these validations show empirical "
         "competitiveness, the framework will have earned its place as a "
         "serious phenomenological alternative to standard dark-matter "
         "cosmology. If they show empirical disfavoring, the framework&rsquo;s "
@@ -3025,7 +3075,7 @@ def build_part_x():
     ]
     flow.append(make_table(sym_rows, col_widths=[4.5*cm, 6.5*cm, 4.0*cm],
                            font_size=8.5))
-    flow.append(Paragraph("Table 5. Master symbol reference for FPM v5.8.",
+    flow.append(Paragraph("Table 5. Master symbol reference for FPM.",
                           styles['Caption']))
 
     # Appendix C: Verification Summary
@@ -3068,9 +3118,9 @@ def build_document():
         output_path, pagesize=A4,
         leftMargin=2.0 * cm, rightMargin=2.0 * cm,
         topMargin=2.5 * cm, bottomMargin=2.5 * cm,
-        title="Finite Possibility Mechanics v5.8: The Complete Unified Paper",
+        title="Finite Possibility Mechanics: The Complete Unified Paper",
         author=AUTHOR_NAME,
-        subject="FPM v5.8: Complete Unified Paper with inline derivations",
+        subject="FPM: Complete Unified Paper with inline derivations",
     )
 
     story = []

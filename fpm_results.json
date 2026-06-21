@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "version": "v5.8",
+    "version": "v5.9",
     "Validation_Suite": "15 primary experiments plus 1 starvation subtest (8b)"
   },
   "axioms": {
@@ -565,6 +565,24 @@
         "DeltaOmega_d": 0.2
       }
     },
+    "sparc_fpm_repaired_gravity": {
+      "available": true,
+      "data_dir": "C:\\Users\\alxth\\OneDrive\\Desktop\\Finite Possibility Mechanics\\local_data",
+      "galaxies_Q1": 99,
+      "rmse_legacy_single_source_km_s": 23.94,
+      "rmse_split_source_km_s": 13.65,
+      "rmse_FPM_repaired_km_s": 11.870977206417242,
+      "rmse_RAR_MOND_km_s": 11.715622173330427,
+      "FPM_wins_vs_RAR_MOND": 48,
+      "late_type_T_ge_7_rmse_FPM_km_s": 8.900141551564177,
+      "late_type_T_ge_7_rmse_RAR_MOND_km_s": 8.884145257555357,
+      "early_type_T_le_4_rmse_FPM_km_s": 25.63214405426983,
+      "early_type_T_le_4_rmse_RAR_MOND_km_s": 25.98004575156327,
+      "susceptibility_formula": "nu_FPM(x)=1+Omega_max/sqrt(x+r_tensor)/(1+E_zombie*x^2)^beta",
+      "x_squared_derivation": "x is a vector acceleration amplitude; scalar ledger load is the invariant field-energy density x dot x = x^2.",
+      "E_zombie": 0.13333333333333333,
+      "low_acceleration_exponent": -0.5
+    },
     "time_dilation": {
       "L_values": [
         0.1030625,
@@ -780,7 +798,7 @@
     },
     "joint_torsion_bell_chsh": {
       "audit_name": "Joint torsion Bell/CHSH audit",
-      "version": "v5.8",
+      "version": "v5.9",
       "n_angles": 181,
       "angles": [
         0.0,
@@ -1714,7 +1732,7 @@
     },
     "zombie_gated_bell_signature": {
       "audit_name": "ZOMBIE-gated Bell signature audit",
-      "version": "v5.8",
+      "version": "v5.9",
       "E_zombie": 0.13333333333333333,
       "energy_ratio_grid": [
         0.05,
@@ -14966,7 +14984,7 @@
     },
     "fine_structure_bare_coupling": {
       "audit_name": "Fine-structure bare coupling (Torsion Snap)",
-      "version": "v5.8",
+      "version": "v5.9",
       "mechanism": "Pure-gauge torsion is zero-cost and non-local. Electromagnetism is the paid snap when symmetric strain exceeds c0. Transverse photons are traceless (K1 = 0), so the maximum symmetric capacity is C_sym_max = (1/e_floor)^(1/beta).",
       "K1_locked": 0.0,
       "e_floor": 0.0314,
@@ -15123,14 +15141,34 @@
     {
       "name": "Galaxy rotation (SPARC)",
       "key_metric": "Median RMSE",
-      "value": 23.94,
-      "verdict": "NOT_COMPETITIVE",
-      "rmse_locked_km_s": 23.94,
+      "value": 11.870977206417242,
+      "verdict": "NEAR_COMPETITIVE",
+      "rmse_legacy_single_source_km_s": 23.94,
       "rmse_split_source_km_s": 13.65,
-      "rmse_RAR_MOND_km_s": 11.72,
+      "rmse_FPM_repaired_km_s": 11.870977206417242,
+      "rmse_RAR_MOND_km_s": 11.715622173330427,
+      "FPM_wins_vs_RAR_MOND": 48,
       "ratio_v240_v30": 0.6486826422238198,
       "environmental_inputs": {
         "R_d_kpc": 120.0
+      },
+      "local_sparc_audit": {
+        "available": true,
+        "data_dir": "C:\\Users\\alxth\\OneDrive\\Desktop\\Finite Possibility Mechanics\\local_data",
+        "galaxies_Q1": 99,
+        "rmse_legacy_single_source_km_s": 23.94,
+        "rmse_split_source_km_s": 13.65,
+        "rmse_FPM_repaired_km_s": 11.870977206417242,
+        "rmse_RAR_MOND_km_s": 11.715622173330427,
+        "FPM_wins_vs_RAR_MOND": 48,
+        "late_type_T_ge_7_rmse_FPM_km_s": 8.900141551564177,
+        "late_type_T_ge_7_rmse_RAR_MOND_km_s": 8.884145257555357,
+        "early_type_T_le_4_rmse_FPM_km_s": 25.63214405426983,
+        "early_type_T_le_4_rmse_RAR_MOND_km_s": 25.98004575156327,
+        "susceptibility_formula": "nu_FPM(x)=1+Omega_max/sqrt(x+r_tensor)/(1+E_zombie*x^2)^beta",
+        "x_squared_derivation": "x is a vector acceleration amplitude; scalar ledger load is the invariant field-energy density x dot x = x^2.",
+        "E_zombie": 0.13333333333333333,
+        "low_acceleration_exponent": -0.5
       }
     },
     {
@@ -15151,7 +15189,7 @@
       "verdict": "PASS",
       "audit": {
         "audit_name": "Born-compatible distribution bridge formal audit",
-        "version": "v5.8",
+        "version": "v5.9",
         "n_states": 1000,
         "n_channels": 9,
         "N_bit_eq": 1452997909,
@@ -15175,7 +15213,7 @@
       "verdict": "PASS",
       "audit": {
         "audit_name": "Joint torsion Bell/CHSH audit",
-        "version": "v5.8",
+        "version": "v5.9",
         "n_angles": 181,
         "angles": [
           0.0,
@@ -16129,7 +16167,7 @@
       "relative_difference_from_macro": 0.0017612840934255504,
       "audit": {
         "audit_name": "Fine-structure bare coupling (Torsion Snap)",
-        "version": "v5.8",
+        "version": "v5.9",
         "mechanism": "Pure-gauge torsion is zero-cost and non-local. Electromagnetism is the paid snap when symmetric strain exceeds c0. Transverse photons are traceless (K1 = 0), so the maximum symmetric capacity is C_sym_max = (1/e_floor)^(1/beta).",
         "K1_locked": 0.0,
         "e_floor": 0.0314,

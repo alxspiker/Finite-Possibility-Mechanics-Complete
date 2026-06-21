@@ -16,6 +16,7 @@ Verifies every claimed derivation in the framework:
 """
 import math
 import json
+from pathlib import Path
 import numpy as np
 
 print("=" * 78)
@@ -619,7 +620,8 @@ print(f"  C_sym_max            = {C_sym_max:.10f}")
 print(f"  1/alpha_bare         = {one_over_alpha_bare:.6f}")
 print(f"  CODATA macroscopic   = {codata_macro_inv:.6f}")
 print(f"  relative difference  = {rel_diff_macro * 100:.3f}% (vacuum polarization)")
-assert one_over_alpha_bare > codata_macro_inv
+# Stronger bare coupling means alpha_bare > alpha_macro, so its inverse is smaller.
+assert one_over_alpha_bare < codata_macro_inv
 
 # ============================================================================
 # Summary
@@ -665,6 +667,7 @@ results = {
     },
 }
 
-with open('/home/z/my-project/build/v51_verification_results.json', 'w') as f:
+output_path = Path("verification_results.json")
+with output_path.open("w") as f:
     json.dump(results, f, indent=2)
-print(f"\nVerification results saved to /home/z/my-project/build/v51_verification_results.json")
+print(f"\nVerification results saved to {output_path.resolve()}")
