@@ -64,7 +64,7 @@ plt.rcParams["font.sans-serif"] = ["DejaVu Sans"]
 plt.rcParams["axes.unicode_minus"] = False
 plt.rcParams["figure.dpi"] = 110
 
-FPM_VERSION = "v6.0"
+FPM_VERSION = "v6.1"
 
 # Physical constants (CODATA / SI)
 HBAR = 1.054571817e-34       # J*s
@@ -1736,6 +1736,35 @@ def audit_zombie_gated_bell_signature(d: DerivedConstants) -> Dict[str, Any]:
                 lambda a, b, Ea=Ea, Eb=Eb: gated_bell_correlation(d, a, b, Ea, Eb)
             )
 
+    causal_loading = np.logspace(math.log10(0.01), math.log10(10.0), 300)
+    protocol_q = []
+    protocol_S = []
+    for loading in causal_loading:
+        E = float(loading * E_zombie)
+        q = zombie_joint_resolution_quality(E, E, d)
+        S = chsh_value(lambda a, b, E=E: gated_bell_correlation(d, a, b, E, E))
+        protocol_q.append(q)
+        protocol_S.append(S)
+
+    def loading_for_q(q_target: float) -> float:
+        return float(0.60 + math.log(1.0 / q_target - 1.0) / 10.0)
+
+    def loading_for_S(S_target: float) -> float:
+        for L1, S1, L2, S2 in zip(
+            causal_loading[:-1], protocol_S[:-1],
+            causal_loading[1:], protocol_S[1:],
+        ):
+            if (S1 - S_target) * (S2 - S_target) <= 0.0 and S1 != S2:
+                t = (S_target - S1) / (S2 - S1)
+                return float(L1 + t * (L2 - L1))
+        return float("nan")
+
+    def first_loading_with_qm_delta(delta: float) -> float:
+        for loading, S in zip(causal_loading, protocol_S):
+            if bell["tsirelson_bound"] - S > delta:
+                return float(loading)
+        return float("nan")
+
     no_link_S = chsh_value(
         lambda a, b: gated_bell_correlation(
             d, a, b, 0.05 * E_zombie, 0.05 * E_zombie,
@@ -1760,6 +1789,33 @@ def audit_zombie_gated_bell_signature(d: DerivedConstants) -> Dict[str, Any]:
         "energy_ratio_grid": grid.tolist(),
         "joint_quality_surface": q_surface.tolist(),
         "S_surface": S_surface.tolist(),
+        "causal_loading": causal_loading.tolist(),
+        "causal_loading_joint_quality": protocol_q,
+        "causal_loading_CHSH": protocol_S,
+        "causal_loading_mapping": (
+            "Dimensionless lab protocol coordinate: L = E/E_zombie. "
+            "Operationally calibrate L from coincidence_rate / thermal_noise_floor, "
+            "normalized so the q=0.5 transition is at L=0.60."
+        ),
+        "causal_loading_thresholds": {
+            "q_0.99": loading_for_q(0.99),
+            "q_0.95": loading_for_q(0.95),
+            "q_0.90": loading_for_q(0.90),
+            "q_0.50": 0.60,
+            "q_0.10": loading_for_q(0.10),
+            "q_0.05": loading_for_q(0.05),
+            "q_0.01": loading_for_q(0.01),
+            "S_2.80": loading_for_S(2.80),
+            "S_2.70": loading_for_S(2.70),
+            "S_2.50": loading_for_S(2.50),
+            "S_2.10": loading_for_S(2.10),
+        },
+        "prohibited_zone_against_flat_QM_Tsirelson": {
+            "delta_gt_0.01_loading_min": first_loading_with_qm_delta(0.01),
+            "delta_gt_0.02_loading_min": first_loading_with_qm_delta(0.02),
+            "delta_gt_0.05_loading_min": first_loading_with_qm_delta(0.05),
+            "delta_gt_0.10_loading_min": first_loading_with_qm_delta(0.10),
+        },
         "same_energy_ratios": ratios.tolist(),
         "same_energy_joint_quality": qualities,
         "same_energy_S": S_values,
@@ -2942,28 +2998,47 @@ def plot_all(d: DerivedConstants, axioms: Axioms,
 
     # 10. ZOMBIE-gated Bell signature
     gated = audit_zombie_gated_bell_signature(d)
-    ratios = np.array(gated["same_energy_ratios"])
-    S_vals = np.array(gated["same_energy_S"])
-    q_vals = np.array(gated["same_energy_joint_quality"])
+    loadings = np.array(gated["causal_loading"])
+    S_vals = np.array(gated["causal_loading_CHSH"])
+    q_vals = np.array(gated["causal_loading_joint_quality"])
+    thresholds = gated["causal_loading_thresholds"]
+    prohibited = gated["prohibited_zone_against_flat_QM_Tsirelson"]
     grid = np.array(gated["energy_ratio_grid"])
     S_surface = np.array(gated["S_surface"])
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.8), constrained_layout=True)
-    axes[0].plot(ratios, S_vals, "o-", color="#8b0000", lw=2.0,
-                 label="FPM gated CHSH")
+    axes[0].plot(loadings, S_vals, color="#8b0000", lw=2.4,
+                 label="FPM protocol curve")
     axes[0].axhline(gated["classical_bound"], color="#555555", ls=":",
                     label="classical bound")
     axes[0].axhline(gated["tsirelson_bound"], color="#1a4a6a", ls="--",
-                    label="Tsirelson")
-    axes[0].axvline(1.0, color="#c8902e", ls=":", lw=1.0,
-                    label="ZOMBIE threshold")
-    axes[0].invert_xaxis()
-    axes[0].set_xlabel("same-wing energy ratio E/E_zombie")
+                    label="QM Tsirelson reference")
+    axes[0].axvspan(
+        prohibited["delta_gt_0.05_loading_min"],
+        loadings[-1],
+        color="#a83232",
+        alpha=0.08,
+        label="|QM-FPM| > 0.05",
+    )
+    for label, key, color in [
+        ("S=2.80", "S_2.80", "#2d7a4a"),
+        ("S=2.50", "S_2.50", "#c8902e"),
+        ("S=2.10", "S_2.10", "#6d3f8f"),
+    ]:
+        x = thresholds[key]
+        axes[0].axvline(x, color=color, ls=":", lw=1.0)
+        axes[0].text(x, 2.03, label, rotation=90, va="bottom",
+                     ha="right", fontsize=7, color=color)
+    axes[0].set_xscale("log")
+    axes[0].set_xlim(loadings[0], loadings[-1])
+    axes[0].set_ylim(1.96, 2.88)
+    axes[0].set_xlabel("causal loading L = E/E_zombie")
     axes[0].set_ylabel("CHSH S")
-    axes[0].set_title("ZOMBIE-gated Bell violation")
+    axes[0].set_title("Experimental protocol: CHSH vs causal loading")
     ax_q = axes[0].twinx()
-    ax_q.plot(ratios, q_vals, "s--", color="#2d7a4a", alpha=0.75,
+    ax_q.plot(loadings, q_vals, color="#2d7a4a", ls="--", alpha=0.75,
               label="joint resolution q")
     ax_q.set_ylabel("joint resolution quality q")
+    ax_q.set_ylim(-0.03, 1.03)
     axes[0].legend(loc="lower left", fontsize=7)
     ax_q.legend(loc="upper right", fontsize=7)
 

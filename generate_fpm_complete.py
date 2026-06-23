@@ -58,7 +58,7 @@ os.makedirs(BUILD_DIR, exist_ok=True)
 
 AUTHOR_NAME = "Alx Spiker"
 REPORT_DATE = "20 June 2026"
-VERSION = "v6.0 - Complete Unified Paper"
+VERSION = "v6.1 - Complete Unified Paper"
 VERSION_TAG = VERSION.split()[0].replace('.', '')
 
 # Load numerical results
@@ -625,7 +625,7 @@ def build_abstract():
         "Bell bridge is not local in Bell's sense: the strong correlations "
         "arise from joint largest-remainder quantization across pre-established "
         "shared boundary conditions whose resolution depends on the relative "
-        "analyzer settings of the linked pair. This release adds the Torsion Snap "
+        "analyzer settings of the linked pair. The framework includes the Torsion Snap "
         "bare fine-structure bridge (&alpha;<sub>bare</sub>=c<sub>0</sub>/C<sub>sym,max</sub> "
         "with K<sub>1</sub>=0 for traceless photon emission) and retains the "
         "proposed ZOMBIE-gated Bell falsification signature. All bridges share "
@@ -1379,7 +1379,7 @@ def build_part_iv():
         r"{\sum_j w_j}, \qquad \sum_i r_{i,t} = \sum_i \mathcal{L}_{i,t}"))
     flow.append(Paragraph(
         "This is the closed-universe conservation theorem for interior ticks: "
-        "total replenishment equals total dissipation. The v6.0 execution "
+        "total replenishment equals total dissipation. The v6.1 execution "
         "engine removes the former passive boundary abstraction. If "
         "E<sub>raw</sub> exceeds E<sub>max</sub>, the excess is first routed to "
         "adjacent Z<sup>3</sup> neighbors according to their available capacity. "
@@ -1399,7 +1399,7 @@ def build_part_iv():
         r"\sum_{j\in\mathcal{N}(i)}s_{i\to j}\right),\qquad "
         r"E_{\mathrm{starvation},i}=\Delta_i^-"))
     flow.append(Paragraph(
-        "In the 12-daemon, 400-tick v6.0 master-chain audit, the active "
+        "In the 12-daemon, 400-tick v6.1 master-chain audit, the active "
         "boundary resolver routes 14.713 units of thermal spillover into "
         "neighboring lattice capacity before any external radiation is logged. "
         "The remaining 58.805 units of exhaust occur only when the local "
@@ -2467,6 +2467,22 @@ def build_part_vi():
         r"E_{\rm zombie}=0.20E_{\max}"))
     flow.extend(eq(
         r"S_{\rm eff}(E_A,E_B)=S_{\rm local}+q(E_A,E_B)\,[S_{\rm joint}-S_{\rm local}]"))
+    thresholds = gated.get('causal_loading_thresholds', {}) if gated else {}
+    prohibited = gated.get('prohibited_zone_against_flat_QM_Tsirelson', {}) if gated else {}
+    flow.append(Paragraph(
+        "For experimental comparison the simulator exports this same gate as a "
+        "dimensionless causal-loading curve S(L), with L = E/E<sub>zombie</sub>. "
+        "A laboratory implementation may calibrate L from the coincidence-rate "
+        "to thermal-noise-floor ratio, normalized so the q = 0.5 transition "
+        "falls at L = 0.60. In the v6.1 protocol curve, "
+        f"S = 2.80 occurs at L = {thresholds.get('S_2.80', 0.2663):.4f}, "
+        f"S = 2.50 at L = {thresholds.get('S_2.50', 0.5580):.4f}, and "
+        f"S = 2.10 at L = {thresholds.get('S_2.10', 0.7989):.4f}. "
+        "Against a flat standard-QM Tsirelson reference, the simulator marks "
+        "the prohibited-zone onset "
+        f"|S<sub>QM</sub> - S<sub>FPM</sub>| &gt; 0.05 at "
+        f"L = {prohibited.get('delta_gt_0.05_loading_min', 0.3274):.4f}.",
+        styles['Body']))
     flow.append(derivation(
         "<b>Interpretation.</b> The higher-energy wing limits the shared "
         "boundary resolution because an unstarved daemon can still resolve "
@@ -2484,11 +2500,13 @@ def build_part_vi():
         "calibration parameter." ))
     flow.extend(chart_img(os.path.join(SIM_CHARTS_DIR, 'fpm_zombie_gated_bell.png'),
                           width_cm=16.0,
-                          caption_text="Figure 11. Proposed ZOMBIE-gated Bell signature. "
-                                       "Left: CHSH rises from the classical bound toward "
-                                       "Tsirelson only as both linked daemons enter deep "
-                                       "ZOMBIE mode. Right: the two-wing surface shows that "
-                                       "one FLOW wing suppresses the joint violation."))
+                          caption_text="Figure 11. Proposed ZOMBIE-gated Bell signature "
+                                       "as a causal-loading protocol. Left: CHSH is plotted "
+                                       "against L = E/E_zombie with threshold markers and the "
+                                       "region where the FPM curve diverges from a flat "
+                                       "standard-QM Tsirelson reference. Right: the two-wing "
+                                       "surface shows that one FLOW wing suppresses the joint "
+                                       "violation."))
     if gated:
         flow.append(result_box(
             "<b>Audit:</b> "
