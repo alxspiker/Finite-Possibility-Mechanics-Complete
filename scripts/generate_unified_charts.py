@@ -48,7 +48,8 @@ COL_GREY = '#555555'
 COL_LIGHT_BG = '#f5f5f0'
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-OUTPUT_DIR = os.path.join(SCRIPT_DIR, 'unified_charts')
+PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
+OUTPUT_DIR = os.path.join(PROJECT_DIR, 'unified_charts')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
@@ -219,8 +220,8 @@ def chart_layer_architecture_legacy_unused():
 
         ('Layer 3  ·  Per-Tick Dynamics',
          'Lagrangian L_t = C^sem + C^geo + lambda|dOmega|\n'
-         'Closed energy ledger with active neighbor spillover at E_max\n'
-         'Mean-field truth target tau_t (network consensus)',
+         'Local replenishment r=P^T L with nearest-neighbor edge flux\n'
+         'Mean-field equilibrium target + active spillover at E_max',
          2.2, COL_GOLD),
 
         ('Layer 4  ·  Theorems (6 exact consequences)',
@@ -283,7 +284,7 @@ def chart_layer_architecture():
          5.25, COL_GREEN),
         ('Layer 3  -  Per-Tick Dynamics / Closure',
          'Lagrangian L_t = C^sem + C^geo + lambda|dOmega|\n'
-         'Energy ledger E_raw=E_t-L_t+r; active boundary routes spillover/exhaust/starvation\n'
+         'Local ledger r=P^T L; exact edge continuity; boundary spillover/exhaust/starvation\n'
          'Carrier update psi_{t+1}=psi_t exp(-i theta L_i,t); ZOMBIE LRM quantization',
          4.05, COL_GOLD),
         ('Layer 4  -  Theorems (6 exact consequences)',
@@ -744,8 +745,8 @@ def chart_closure_diagram():
     boxes = [
         # (x, y, w, h, title, eq, color)
         (0.5, 3.5, 4.5, 2.3, 'Energy Closure',
-         'Sum_i r_{i,t} = Sum_i L_{i,t}\n\n'
-         'Interior replenishment =\ninterior dissipation.\nBoundary exhaust tracked.',
+         'r_t = P_t^T L_t\nE_i(t+1)-E_i(t)+Sum_j J_ij=0\n\n'
+         'Nearest-neighbor flux;\nregional boundary balance.\nExpanded boundary ledger.',
          COL_BLUE),
         (6.0, 3.5, 4.5, 2.3, 'Entropy Closure',
          'Delta S_sem + Delta S_thermo >= 0\n\n'

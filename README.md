@@ -14,12 +14,16 @@ The complete paper is [`FPM_Complete_Unified.pdf`](./FPM_Complete_Unified.pdf).
 .
 ├── README.md                                      # This file
 ├── FPM_Complete_Unified.pdf                       # The single unified paper
-├── generate_fpm_complete.py                       # PDF generator script
-├── fpm_simulator.py                               # Closed-form simulator
-├── fpm_results.json                               # Generated simulator results
+├── outputs/                                       # Generated JSON results
+│   ├── fpm_results.json                           # Simulator results
+│   └── verification_results.json                  # Derivation + local bridge audit results
 ├── simulator_charts/                              # Generated simulator PNGs
-├── verify_derivations.py                          # Verification script
-├── generate_unified_charts.py                     # Chart generator (10 diagrams)
+├── scripts/
+│   ├── fpm_local_energy_bridge.py                 # Independent local-ledger audit harness
+│   ├── fpm_simulator.py                           # Closed-form simulator
+│   ├── generate_fpm_complete.py                   # PDF generator script
+│   ├── generate_unified_charts.py                 # Chart generator (10 diagrams)
+│   └── verify_derivations.py                      # Verification script
 └── unified_charts/                                # Generated chart PNGs
     ├── 01_master_chain.png
     ├── 02_layer_architecture.png
@@ -49,23 +53,33 @@ Open `FPM_Complete_Unified.pdf` in any PDF reader. The document is organized int
 
 ### Run the verification
 ```bash
-python verify_derivations.py
+python scripts/verify_derivations.py
 ```
-This runs all 10 derivation checks and prints a summary. All checks pass.
+This runs 10 derivation checks plus the local continuity bridge audit. All checks pass.
 
 ### Run the simulator
 ```bash
 pip install matplotlib numpy
-python fpm_simulator.py
+python scripts/fpm_simulator.py
 ```
-This re-derives all constants, runs the validation suite, and writes `fpm_results.json` plus charts under `simulator_charts/`.
+This re-derives all constants, runs the 16-experiment validation suite, and writes `outputs/fpm_results.json` plus charts under `simulator_charts/`.
+
+
+### Run the local energy-bridge audit
+```bash
+pip install numpy scipy
+python scripts/fpm_local_energy_bridge.py
+```
+This independently checks row stochasticity, detailed balance, exact nodewise
+continuity, finite one-edge-per-tick propagation, and convergence of the local
+kernel to the frozen-weight mean-field equilibrium.
 
 ### Regenerate the PDF
 ```bash
 pip install reportlab matplotlib numpy pillow
-python generate_unified_charts.py    # Regenerates 10 unified diagrams
-python fpm_simulator.py                # Refreshes simulator results/charts
-python generate_fpm_complete.py        # Regenerates the PDF (12 figures total)
+python scripts/generate_unified_charts.py    # Regenerates 10 unified diagrams
+python scripts/fpm_simulator.py              # Refreshes simulator results/charts
+python scripts/generate_fpm_complete.py      # Regenerates the PDF (12 figures total)
 ```
 
 ## Paper Structure (10 parts, 33 sections)
@@ -83,6 +97,9 @@ python generate_fpm_complete.py        # Regenerates the PDF (12 figures total)
 
 ### Part IV: Per-Tick Dynamics (with L_max, L_rest, λ derivations inline)
 - §6 The Closed Energy Ledger
+  - §6.1 nearest-neighbor local replenishment operator `r = P^T L`
+  - §6.2 the former global formula retained as the frozen-weight mean-field equilibrium
+  - exact nodewise and regional discrete continuity equations
 - §7 The Four Closure Theorems (structural lemmas: energy, entropy, angular momentum, information)
 - §8 Derivation of the Action Floor c_0 = 0.05
 - §9 Derivation of the Smoothness Coefficient λ = 36/7
@@ -110,7 +127,7 @@ python generate_fpm_complete.py        # Regenerates the PDF (12 figures total)
 - §26 Derivation of the AxCore-to-FPM Calibration Factor = 80
 
 ### Part VIII: Numerical Validation
-- §27 Fifteen experiments summary plus 8b starvation subtest
+- §27 Sixteen experiments summary plus 8b starvation subtest
 
 ### Part IX: Master Chain & Open Frontiers
 - §28 The Master Chain Equation
@@ -151,7 +168,7 @@ python generate_fpm_complete.py        # Regenerates the PDF (12 figures total)
 
 ## Verification Results
 
-All 10 derivation checks pass:
+All 10 derivation checks plus the local continuity bridge audit pass:
 
 | # | Derivation | Computed | Target | Match |
 |---|------------|----------|--------|-------|
@@ -165,6 +182,7 @@ All 10 derivation checks pass:
 | 8 | G_FPM | 6.680e-11 | 6.674e-11 (CODATA) | 0.09% off at T=300.0 K |
 | 9 | Calibration factor | 80 | 80 | exact |
 | 10 | Bare coupling 1/α_bare | 136.795 | 137.036 (macro) | 0.17% (vacuum pol.) |
+| 11 | Local replenishment bridge | continuity residual ≈ 1e-16 | exact local balance | pass |
 
 ## The Five Axioms (the only inputs)
 
@@ -180,7 +198,7 @@ All 10 derivation checks pass:
 
 ## The Deepest Result
 
-The FPM framework is a fully axiomatic system. Every observable prediction is a theorem of the five axioms or a bridge evaluation with explicit environmental inputs. The Born-compatible bridge, joint torsion Bell/CHSH audit, ZOMBIE-gated Bell signature, and Torsion Snap bare fine-structure coupling now provide candidate finite-substrate measurement tests: the Bell angle dependence is computed from SO(3) rotation of a shared pure-gauge torsion link before exact LRM microcell allocation, and the violation is predicted to require simultaneous deep low-energy operation of both linked wings. This remains an explicitly topological/non-local bridge result pending independent physical validation, not a locally mediated Bell violation. In short: FPM is a non-local realist topology that represents Tsirelson-level correlations with linear memory instead of exponential tensor-product storage. The bare fine-structure coupling 1/α_bare ≈ 136.795 at the grid UV cutoff is stronger than the laboratory 1/137.036, predicting vacuum polarization and a finite Landau-pole cutoff. The framework's empirical engagements (SPARC, Planck, CODATA, Bell gating, α_bare) are genuine tests of the axioms, not fits to data.
+The FPM framework is a fully axiomatic system. Its ledger has an exact nearest-neighbor continuity law, a finite support cone, and a frozen-weight equilibrium that recovers the globally normalized formula without treating it as instantaneous transport. Every observable prediction is a theorem of the five axioms or a bridge evaluation with explicit environmental inputs. The Born-compatible bridge, joint torsion Bell/CHSH audit, ZOMBIE-gated Bell signature, and Torsion Snap bare fine-structure coupling now provide candidate finite-substrate measurement tests: the Bell angle dependence is computed from SO(3) rotation of a shared pure-gauge torsion link before exact LRM microcell allocation, and the violation is predicted to require simultaneous deep low-energy operation of both linked wings. This remains an explicitly topological/non-local bridge result pending independent physical validation, not a locally mediated Bell violation. In short: FPM is a non-local realist topology that represents Tsirelson-level correlations with linear memory instead of exponential tensor-product storage. The bare fine-structure coupling 1/α_bare ≈ 136.795 at the grid UV cutoff is stronger than the laboratory 1/137.036, predicting vacuum polarization and a finite Landau-pole cutoff. The framework's empirical engagements (SPARC, Planck, CODATA, Bell gating, α_bare) are genuine tests of the axioms, not fits to data.
 
 **The 0.09% deterministic match to CODATA G at T=300.0 K, the 0.45% match to Planck dark-to-baryonic ratio, and the 0.54% match to Planck TT RMS are all derived predictions, not fitted parameters.**
 

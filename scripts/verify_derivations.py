@@ -13,6 +13,7 @@ Verifies every claimed derivation in the framework:
   8. G_FPM from mass-injection gauge quotient
   9. Calibration factor (AxCore -> FPM) from dimensional counting
   10. Bare fine-structure coupling (Torsion Snap, K1 = 0) from c0, e_floor, beta
+  11. Local replenishment continuity bridge (structural audit)
 """
 import math
 import json
@@ -628,10 +629,99 @@ print(f"  relative difference  = {rel_diff_macro * 100:.3f}% (vacuum polarizatio
 assert one_over_alpha_bare < codata_macro_inv
 
 # ============================================================================
+# Structural Audit 11: Local replenishment continuity bridge
+# ============================================================================
+print("\n[11] Local Replenishment Continuity Bridge")
+print("-" * 78)
+print("Claim: a nearest-neighbor row-stochastic kernel preserves total energy,")
+print("       gives an exact discrete continuity law, has finite support speed,")
+print("       and retains the old global formula as its frozen-weight equilibrium.")
+
+n_local = 31
+center_local = n_local // 2
+x_local = np.linspace(-1.0, 1.0, n_local)
+w_local = np.exp(0.35 * np.sin(2.0 * math.pi * x_local) + 0.15 * x_local)
+omega_local = 0.5 * (0.50 + 0.85) + 0.10 * np.cos(math.pi * x_local)
+omega_local = np.clip(omega_local, 0.50, 0.85)
+neighbors_local = []
+for i in range(n_local):
+    js = []
+    if i > 0:
+        js.append(i - 1)
+    if i + 1 < n_local:
+        js.append(i + 1)
+    neighbors_local.append(js)
+d_max_local = max(len(js) for js in neighbors_local)
+P_local = np.zeros((n_local, n_local), dtype=float)
+for i, js in enumerate(neighbors_local):
+    outgoing = 0.0
+    for j in js:
+        mu_ij_local = 1.0 - 0.5 * (omega_local[i] + omega_local[j])
+        value = mu_ij_local / d_max_local * min(1.0, w_local[j] / w_local[i])
+        P_local[i, j] = value
+        outgoing += value
+    P_local[i, i] = 1.0 - outgoing
+
+pi_local = w_local / np.sum(w_local)
+row_error_local = float(np.max(np.abs(P_local.sum(axis=1) - 1.0)))
+stationary_error_local = float(np.max(np.abs(P_local.T @ pi_local - pi_local)))
+detailed_error_local = 0.0
+for i, js in enumerate(neighbors_local):
+    for j in js:
+        detailed_error_local = max(
+            detailed_error_local,
+            abs(w_local[i] * P_local[i, j] - w_local[j] * P_local[j, i]),
+        )
+
+rng_local = np.random.default_rng(1602)
+L_local = 0.05 + rng_local.random(n_local)
+r_local = P_local.T @ L_local
+balance_error_local = float(abs(np.sum(r_local) - np.sum(L_local)))
+J_local = P_local * L_local[:, None] - P_local.T * L_local[None, :]
+continuity_error_local = float(np.max(np.abs(r_local - L_local + J_local.sum(axis=1))))
+antisymmetry_error_local = float(np.max(np.abs(J_local + J_local.T)))
+
+packet_local = np.zeros(n_local, dtype=float)
+packet_local[center_local] = 1.0
+support_radii_local = []
+for tick in range(9):
+    active = np.flatnonzero(packet_local > 1e-15)
+    radius = max((abs(int(i) - center_local) for i in active), default=0)
+    support_radii_local.append(radius)
+    assert radius <= tick
+    packet_local = P_local.T @ packet_local
+
+packet_local = np.zeros(n_local, dtype=float)
+packet_local[center_local] = 1.0
+for _ in range(50000):
+    packet_local = P_local.T @ packet_local
+equilibrium_error_local = float(np.sum(np.abs(packet_local - pi_local)))
+
+edge_mu_local = 1.0 - 0.5 * (omega_local[:-1] + omega_local[1:])
+print(f"  edge mobility range         = [{edge_mu_local.min():.6f}, {edge_mu_local.max():.6f}]")
+print(f"  row-stochastic residual      = {row_error_local:.3e}")
+print(f"  stationary-weight residual   = {stationary_error_local:.3e}")
+print(f"  detailed-balance residual    = {detailed_error_local:.3e}")
+print(f"  global closure residual      = {balance_error_local:.3e}")
+print(f"  local continuity residual    = {continuity_error_local:.3e}")
+print(f"  flux antisymmetry residual   = {antisymmetry_error_local:.3e}")
+print(f"  support radii ticks 0..8     = {support_radii_local}")
+print(f"  equilibrium L1 residual      = {equilibrium_error_local:.3e}")
+
+assert row_error_local < 1e-12
+assert stationary_error_local < 1e-12
+assert detailed_error_local < 1e-12
+assert balance_error_local < 1e-12
+assert continuity_error_local < 1e-12
+assert antisymmetry_error_local < 1e-12
+assert equilibrium_error_local < 1e-8
+print("  VERIFIED: exact local conservation and frozen-weight equilibrium ✓")
+
+# ============================================================================
 # Summary
 # ============================================================================
 print("\n" + "=" * 78)
-print("SUMMARY: All 10 Derivations Verified")
+print("SUMMARY: 10 Derivations + Local Continuity Bridge Verified")
 print("=" * 78)
 print()
 print("  [1] 9:1 channel split                    -> alpha=1/5, beta=9/5  ✓")
@@ -644,6 +734,7 @@ print("  [7] CMB source spectrum                  -> A, n_s, r, ell_D    ✓")
 print("  [8] G_FPM                                -> 6.680e-11 vs CODATA ✓")
 print("  [9] AxCore-to-FPM calibration factor     -> 80                  ✓")
 print("  [10] Bare coupling 1/alpha_bare          -> 136.795 vs 137.036  ✓")
+print("  [11] Local replenishment bridge          -> exact continuity     ✓")
 print()
 print("All derivations verify numerically to stated precision.")
 print("The framework is now fully derived from first principles,")
@@ -669,9 +760,23 @@ results = {
         "relative_difference_from_macro": rel_diff_macro,
         "verified": True,
     },
+    "s11_local_replenishment_bridge": {
+        "row_stochastic_error": row_error_local,
+        "stationary_weight_error": stationary_error_local,
+        "detailed_balance_error": detailed_error_local,
+        "global_balance_error": balance_error_local,
+        "continuity_error": continuity_error_local,
+        "antisymmetry_error": antisymmetry_error_local,
+        "support_radii_ticks_0_to_8": support_radii_local,
+        "equilibrium_l1_error": equilibrium_error_local,
+        "verified": True,
+    },
 }
 
-output_path = Path("verification_results.json")
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+OUTPUT_DIR = PROJECT_DIR / "outputs"
+OUTPUT_DIR.mkdir(exist_ok=True)
+output_path = OUTPUT_DIR / "verification_results.json"
 with output_path.open("w") as f:
     json.dump(results, f, indent=2)
 print(f"\nVerification results saved to {output_path.resolve()}")

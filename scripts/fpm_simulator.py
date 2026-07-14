@@ -8,7 +8,7 @@ A single self-contained Python simulator that:
   * takes the five FPM axioms as the ONLY inputs,
   * re-derives every one of the 22 constants inline (zero fitted parameters),
   * runs the per-tick master chain on a Z^3 lattice of daemons,
-  * runs all 15 numerical validation experiments (incl. N_bit_eq, Born, Bell, fine-structure, and runtime torsion audits),
+  * runs all 16 numerical validation experiments (incl. N_bit_eq, Born, Bell, fine-structure, and runtime torsion audits),
   * builds the eight physical bridges (Lindblad / Landauer / Gravity /
     Time-dilation / CMB / Born-compatible distribution / Bell-CHSH / Fine-structure), and
   * emits all emergent observables as JSON + PNG plots.
@@ -25,7 +25,7 @@ The mathematical content is entirely from the paper; this file is a faithful,
 closed-form implementation of it.
 
 Outputs:
-    ./fpm_results.json
+    ./outputs/fpm_results.json
     ./simulator_charts/fpm_*.png
 """
 
@@ -64,7 +64,7 @@ plt.rcParams["font.sans-serif"] = ["DejaVu Sans"]
 plt.rcParams["axes.unicode_minus"] = False
 plt.rcParams["figure.dpi"] = 110
 
-FPM_VERSION = "v6.1"
+FPM_VERSION = "v6.2"
 
 # Physical constants (CODATA / SI)
 HBAR = 1.054571817e-34       # J*s
@@ -83,11 +83,13 @@ PLANCK_ELL_D_RANGE = (1100.0, 1500.0)
 BK18_R_UPPER = 0.09
 CERN_MUON_GAMMA = 29.3
 
-OUTPUT_DIR = os.environ.get("FPM_OUTPUT_DIR", os.getcwd())
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
+OUTPUT_DIR = os.environ.get("FPM_OUTPUT_DIR", os.path.join(PROJECT_DIR, "outputs"))
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 SIMULATOR_CHARTS_DIR = os.environ.get(
     "FPM_SIMULATOR_CHARTS_DIR",
-    os.path.join(OUTPUT_DIR, "simulator_charts"),
+    os.path.join(PROJECT_DIR, "simulator_charts"),
 )
 os.makedirs(SIMULATOR_CHARTS_DIR, exist_ok=True)
 
@@ -787,17 +789,140 @@ def route_cost_channels(daemon: DaemonState, total_L: float) -> np.ndarray:
     return np.maximum(0.0, total_L * weights)
 
 
-def replenishment_rule(daemons: List[DaemonState], Ls: List[float]) -> List[float]:
-    """r_i = (sum L_j) * w_i / sum w_j  with w_i = |grad Omega| + eta*|pi-tau|."""
-    eta_geo = 0.1
+def activity_weights(daemons: List[DaemonState], eta_geo: float = 0.1) -> np.ndarray:
+    """Positive activity weights used by the local replenishment kernel.
+
+    The viscosity-gradient contribution is represented by the dispersion of the
+    local directed routing tensor, while the geometric term measures prior-target
+    mismatch.  A strictly positive floor keeps the Markov kernel irreducible.
+    """
     ws = []
     for dm in daemons:
-        # local Omega gradient proxy: dispersion of R entries
         w = float(np.std(dm.R)) + eta_geo * abs(dm.pi - dm.tau)
         ws.append(max(1e-9, w))
-    total_L = sum(Ls)
-    total_w = sum(ws)
-    return [total_L * w / total_w for w in ws]
+    return np.asarray(ws, dtype=float)
+
+
+def ring_neighbour_map(n: int) -> List[List[int]]:
+    """Nearest-neighbour map for the simulator's periodic 1D lattice proxy.
+
+    The paper's substrate is Z^3 with six neighbours.  The compact master-chain
+    audit uses a periodic ring, so the same local-kernel theorem is evaluated
+    with two neighbours per site.
+    """
+    if n <= 0:
+        raise ValueError("n must be positive")
+    if n == 1:
+        return [[]]
+    return [sorted({(i - 1) % n, (i + 1) % n} - {i}) for i in range(n)]
+
+
+def local_replenishment_kernel(
+    weights: np.ndarray,
+    viscosities: np.ndarray,
+    neighbours: Optional[List[List[int]]] = None,
+) -> np.ndarray:
+    """Build a local, row-stochastic Metropolis kernel with pi_i proportional to w_i.
+
+    For each undirected nearest-neighbour edge i~j, define the symmetric local
+    mobility gate
+
+        mu_ij = 1 - (Omega_i + Omega_j)/2,
+
+    and then
+
+        P_ij = mu_ij/d_max * min(1, w_j / w_i).
+
+    P_ii closes the row sum.  Since mu_ij = mu_ji, detailed balance holds:
+    w_i P_ij = w_j P_ji.  The viscosity field therefore supplies the transfer
+    rate without introducing a new fitted constant or a globally evaluated
+    control parameter.
+    """
+    weights = np.asarray(weights, dtype=float)
+    viscosities = np.asarray(viscosities, dtype=float)
+    n = int(weights.size)
+    if n == 0:
+        return np.zeros((0, 0), dtype=float)
+    if viscosities.shape != weights.shape:
+        raise ValueError("viscosities must have the same shape as weights")
+    if np.any(~np.isfinite(weights)) or np.any(weights <= 0.0):
+        raise ValueError("activity weights must be finite and strictly positive")
+    if np.any(~np.isfinite(viscosities)) or np.any((viscosities <= 0.0) | (viscosities >= 1.0)):
+        raise ValueError("viscosities must be finite and lie strictly between 0 and 1")
+    if neighbours is None:
+        neighbours = ring_neighbour_map(n)
+    if len(neighbours) != n:
+        raise ValueError("neighbour map size does not match weights")
+
+    neighbour_sets = [set(js) for js in neighbours]
+    for i, js in enumerate(neighbour_sets):
+        for j in js:
+            if j < 0 or j >= n or i not in neighbour_sets[j]:
+                raise ValueError("neighbour map must be an undirected graph")
+    d_max = max(1, max((len(js) for js in neighbour_sets), default=0))
+
+    P = np.zeros((n, n), dtype=float)
+    for i, js in enumerate(neighbour_sets):
+        outgoing = 0.0
+        for j in js:
+            mu_ij = 1.0 - 0.5 * (viscosities[i] + viscosities[j])
+            value = (mu_ij / float(d_max)) * min(1.0, weights[j] / weights[i])
+            P[i, j] = value
+            outgoing += value
+        P[i, i] = 1.0 - outgoing
+    return P
+
+
+def mean_field_replenishment_equilibrium(
+    Ls: List[float], weights: np.ndarray
+) -> np.ndarray:
+    """Frozen-weight equilibrium target retained from the pre-v6.2 global formula."""
+    costs = np.asarray(Ls, dtype=float)
+    weights = np.asarray(weights, dtype=float)
+    return float(np.sum(costs)) * weights / float(np.sum(weights))
+
+
+def replenishment_rule(
+    daemons: List[DaemonState],
+    Ls: List[float],
+) -> List[float]:
+    """One-tick local replenishment r = P^T L.
+
+    P is non-negative, nearest-neighbour supported, and row-stochastic, so
+    sum_i r_i = sum_i L_i exactly.  Under frozen positive activity weights on a
+    connected lattice, repeated local transport converges to the former global
+    formula (sum L) w_i / sum w as its mean-field equilibrium target.
+    """
+    if len(daemons) != len(Ls):
+        raise ValueError("daemons and Ls must have the same length")
+    weights = activity_weights(daemons)
+    viscosities = np.asarray([dm.Omega_prev for dm in daemons], dtype=float)
+    P = local_replenishment_kernel(
+        weights, viscosities, ring_neighbour_map(len(daemons))
+    )
+    costs = np.asarray(Ls, dtype=float)
+    return list(np.asarray(P.T @ costs, dtype=float))
+
+
+def local_energy_flux_residual(
+    P: np.ndarray,
+    costs: np.ndarray,
+    replenishment: Optional[np.ndarray] = None,
+) -> Tuple[float, np.ndarray]:
+    """Return the exact nodewise continuity residual and antisymmetric flux matrix.
+
+    J_ij = P_ij L_i - P_ji L_j and
+    (r_i - L_i) + sum_j J_ij = 0.
+    """
+    P = np.asarray(P, dtype=float)
+    costs = np.asarray(costs, dtype=float)
+    if replenishment is None:
+        replenishment = np.asarray(P.T @ costs, dtype=float)
+    else:
+        replenishment = np.asarray(replenishment, dtype=float)
+    flux = P * costs[:, None] - P.T * costs[None, :]
+    residual = replenishment - costs + np.sum(flux, axis=1)
+    return float(np.max(np.abs(residual))), flux
 
 
 def coherence_update(daemon: DaemonState, kappa: float, d: DerivedConstants,
@@ -1929,7 +2054,7 @@ def calibrate(d: DerivedConstants, ax: Axioms) -> Dict[str, Any]:
 
 
 # =============================================================================
-# LAYER 8 -- NUMERICAL VALIDATION (10 experiments)
+# LAYER 8 -- NUMERICAL VALIDATION (16 experiments + starvation subtest)
 # =============================================================================
 
 
@@ -2409,6 +2534,105 @@ def experiment_14_runtime_torsion_link_quantization(d: DerivedConstants) -> Dict
     }
 
 
+def experiment_16_local_replenishment_bridge(d: DerivedConstants) -> Dict[str, Any]:
+    """Audit exact locality, conservation, finite propagation, and equilibrium.
+
+    A finite line graph is used so that the support cone can be checked without
+    periodic wraparound.  The same construction extends to the six-neighbour
+    Z^3 lattice by taking d_max = 6.
+    """
+    n = 31
+    center = n // 2
+    neighbours: List[List[int]] = []
+    for i in range(n):
+        js = []
+        if i > 0:
+            js.append(i - 1)
+        if i + 1 < n:
+            js.append(i + 1)
+        neighbours.append(js)
+
+    x = np.linspace(-1.0, 1.0, n)
+    weights = np.exp(0.35 * np.sin(2.0 * math.pi * x) + 0.15 * x)
+    viscosities = 0.5 * (d.Omega_min + d.Omega_max) + 0.10 * np.cos(math.pi * x)
+    viscosities = np.clip(viscosities, d.Omega_min, d.Omega_max)
+    P = local_replenishment_kernel(weights, viscosities, neighbours)
+    pi = weights / float(np.sum(weights))
+
+    row_error = float(np.max(np.abs(np.sum(P, axis=1) - 1.0)))
+    stationary_error = float(np.max(np.abs(P.T @ pi - pi)))
+    detailed_balance_error = 0.0
+    for i, js in enumerate(neighbours):
+        for j in js:
+            detailed_balance_error = max(
+                detailed_balance_error,
+                abs(weights[i] * P[i, j] - weights[j] * P[j, i]),
+            )
+
+    rng = np.random.default_rng(1602)
+    costs = 0.05 + rng.random(n)
+    replenishment = P.T @ costs
+    global_balance_error = float(abs(np.sum(replenishment) - np.sum(costs)))
+    continuity_error, flux = local_energy_flux_residual(P, costs, replenishment)
+    antisymmetry_error = float(np.max(np.abs(flux + flux.T)))
+
+    # Finite support cone: a packet moves at most one graph edge per tick.
+    packet = np.zeros(n, dtype=float)
+    packet[center] = 1.0
+    max_speed_violation = 0
+    support_radii = []
+    for step in range(9):
+        active = np.flatnonzero(packet > 1e-15)
+        radius = max((abs(int(i) - center) for i in active), default=0)
+        support_radii.append(radius)
+        max_speed_violation = max(max_speed_violation, radius - step)
+        packet = P.T @ packet
+
+    # Frozen-weight equilibrium of the local operator equals the old global rule.
+    packet = np.zeros(n, dtype=float)
+    packet[center] = 1.0
+    for _ in range(50000):
+        packet = P.T @ packet
+    equilibrium_l1_error = float(np.sum(np.abs(packet - pi)))
+
+    propagation_speed = d.dx_univ / d.dt_univ
+    speed_relative_error = abs(propagation_speed - C_LIGHT) / C_LIGHT
+    passed = (
+        row_error < 1e-12
+        and stationary_error < 1e-12
+        and detailed_balance_error < 1e-12
+        and global_balance_error < 1e-12
+        and continuity_error < 1e-12
+        and antisymmetry_error < 1e-12
+        and max_speed_violation <= 0
+        and equilibrium_l1_error < 1e-8
+        and speed_relative_error < 1e-3
+    )
+    return {
+        "name": "Local replenishment continuity bridge",
+        "key_metric": "max continuity residual",
+        "value": continuity_error,
+        "verdict": "PASS" if passed else "FAIL",
+        "row_stochastic_error": row_error,
+        "stationary_weight_error": stationary_error,
+        "detailed_balance_error": detailed_balance_error,
+        "global_balance_error": global_balance_error,
+        "antisymmetry_error": antisymmetry_error,
+        "support_radii_ticks_0_to_8": support_radii,
+        "max_speed_cone_violation_edges": int(max_speed_violation),
+        "equilibrium_l1_error": equilibrium_l1_error,
+        "one_edge_per_tick_speed_m_s": propagation_speed,
+        "relative_error_to_c": speed_relative_error,
+        "edge_mobility_min": float(np.min(1.0 - 0.5 * (viscosities[:-1] + viscosities[1:]))),
+        "edge_mobility_max": float(np.max(1.0 - 0.5 * (viscosities[:-1] + viscosities[1:]))),
+        "interpretation": (
+            "The original globally normalized replenishment formula is the "
+            "frozen-weight equilibrium of an exact nearest-neighbour transport "
+            "kernel, not the microscopic one-tick transfer rule."
+        ),
+    }
+
+
 def run_all_experiments(d: DerivedConstants) -> List[Dict[str, Any]]:
     return [
         experiment_01_dispersion_contraction(d),
@@ -2427,6 +2651,7 @@ def run_all_experiments(d: DerivedConstants) -> List[Dict[str, Any]]:
         experiment_13_joint_torsion_bell_chsh(d),
         experiment_14_runtime_torsion_link_quantization(d),
         experiment_15_fine_structure_bare_coupling(d),
+        experiment_16_local_replenishment_bridge(d),
     ]
 
 
@@ -2940,7 +3165,7 @@ def plot_all(d: DerivedConstants, axioms: Axioms,
     # 8. Closure diagram (the 4 closure properties as a schematic)
     fig, ax = plt.subplots(figsize=(9, 4.5), constrained_layout=True)
     closures = [
-        ("Energy", "sum r = sum L", "A3 closed ledger"),
+        ("Energy", "r=P^T L; dE_i+sum J_ij=0", "local flux + A3 closure"),
         ("Entropy", "dS_sem + dS_thermo >= 0", "Landauer saturation"),
         ("Angular momentum", "closed int A dS = 0", "pure gauge torsion"),
         ("Information", "all 8 bridges f(L_t)", "single currency"),
@@ -3265,7 +3490,7 @@ def main() -> None:
     print(f"        T = 300 K operational input, NOT to N_bit_eq rounding.")
     print()
 
-    validation_suite = "15 primary experiments plus 1 starvation subtest (8b)"
+    validation_suite = "16 primary experiments plus 1 starvation subtest (8b)"
     print(f"Layer 8: Running validation suite: {validation_suite}...")
     experiments = run_all_experiments(d)
     for e in experiments:
@@ -3309,11 +3534,15 @@ def main() -> None:
         print(f"  {k:24s}: {p}")
     print()
     plot_paths_for_json = {
-        k: os.path.relpath(p, OUTPUT_DIR).replace(os.sep, "/")
+        k: os.path.relpath(p, PROJECT_DIR).replace(os.sep, "/")
         for k, p in plot_paths.items()
     }
 
     # ---- Assemble final JSON output --------------------------------------
+    local_bridge_audit = next(
+        (e for e in experiments if e.get("name") == "Local replenishment continuity bridge"),
+        {},
+    )
     results = {
         "metadata": {
             "version": FPM_VERSION,
@@ -3347,6 +3576,7 @@ def main() -> None:
             "joint_torsion_bell_chsh": to_serialisable(b_bell),
             "zombie_gated_bell_signature": to_serialisable(b_gated),
             "fine_structure_bare_coupling": to_serialisable(b_fine),
+            "local_energy_continuity": to_serialisable(local_bridge_audit),
         },
         "calibration": to_serialisable(cal),
         "experiments": to_serialisable(experiments),
@@ -3391,7 +3621,7 @@ def main() -> None:
     print("    -> (H_N, S_N)")
     print("    -> A_N -> C_N -> kappa_t -> Omega_t")
     print("    -> L_t = C_sem + C_geo + lambda|dOmega|")
-    print("    -> E_raw = E_t - L_t + r")
+    print("    -> local replenishment r_t = P_t^T L_t; E_raw = E_t - L_t + r_t")
     print("    -> active boundary resolver: neighbor spillover, external exhaust, starvation")
     print("    -> psi_{i,t+1}=psi_{i,t} exp(-i theta L_{i,t})")
     print("    -> (D_{t+1}, p_{t+1}, b_{t+1})")

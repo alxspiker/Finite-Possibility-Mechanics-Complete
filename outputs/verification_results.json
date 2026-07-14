@@ -1,0 +1,74 @@
+{
+  "d1_9_1_split": {
+    "alpha": 0.2,
+    "beta": 1.8,
+    "verified": true
+  },
+  "d2_viscosity_bounds": {
+    "Omega_min": 0.5,
+    "Omega_max": 0.85,
+    "verified": true
+  },
+  "d3_causal_depletion": {
+    "exponent": -0.75,
+    "verified": true
+  },
+  "d4_ledger_inertia": {
+    "ratio": 5.333333333333333,
+    "verified": true
+  },
+  "d5_lag_ceiling": {
+    "gamma_max": 31.873862947240752,
+    "verified": true
+  },
+  "d6_alpha_PP": {
+    "value": 702.6283490004513,
+    "target": 702.628349,
+    "relative_residual": 6.423548756567687e-13,
+    "verified": true
+  },
+  "d7_cmb_spectrum": {
+    "A_FPM": 4.039016341203558e-05,
+    "n_s": 0.9686263318112633,
+    "r": 0.003485963132081853,
+    "ell_D": 1309.5687839896002,
+    "verified": true
+  },
+  "d8_G_FPM": {
+    "value": 6.680340090613721e-11,
+    "CODATA": 6.6743e-11,
+    "relative_error": 0.0009049773929433958,
+    "verified": true
+  },
+  "d9_calibration_factor": {
+    "value": 80,
+    "verified": true
+  },
+  "d10_bare_coupling": {
+    "one_over_alpha_bare": 136.79463975858667,
+    "CODATA_macroscopic_inv": 137.035999084,
+    "relative_difference_from_macro": 0.0017612840934255504,
+    "verified": true
+  },
+  "s11_local_replenishment_bridge": {
+    "row_stochastic_error": 1.1102230246251565e-16,
+    "stationary_weight_error": 6.938893903907228e-18,
+    "detailed_balance_error": 2.7755575615628914e-17,
+    "global_balance_error": 3.552713678800501e-15,
+    "continuity_error": 6.938893903907228e-17,
+    "antisymmetry_error": 0.0,
+    "support_radii_ticks_0_to_8": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "equilibrium_l1_error": 7.277164981722706e-14,
+    "verified": true
+  }
+}
