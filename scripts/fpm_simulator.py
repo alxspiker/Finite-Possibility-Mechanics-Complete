@@ -803,18 +803,32 @@ def activity_weights(daemons: List[DaemonState], eta_geo: float = 0.1) -> np.nda
     return np.asarray(ws, dtype=float)
 
 
-def ring_neighbour_map(n: int) -> List[List[int]]:
-    """Nearest-neighbour map for the simulator's periodic 1D lattice proxy.
+def periodic_cubic_neighbour_map(side: int) -> List[List[int]]:
+    """Six-neighbour map for a finite periodic cubic Z^3 lattice (a 3-torus).
 
-    The paper's substrate is Z^3 with six neighbours.  The compact master-chain
-    audit uses a periodic ring, so the same local-kernel theorem is evaluated
-    with two neighbours per site.
+    A side length of at least three makes the positive and negative directions
+    distinct on every axis.  The production runtime uses side=5, giving 125
+    daemons and d_max=6 exactly as specified by the local-kernel construction.
     """
-    if n <= 0:
-        raise ValueError("n must be positive")
-    if n == 1:
-        return [[]]
-    return [sorted({(i - 1) % n, (i + 1) % n} - {i}) for i in range(n)]
+    if side < 3:
+        raise ValueError("periodic cubic lattice requires side >= 3")
+
+    def index(x: int, y: int, z: int) -> int:
+        return ((x % side) * side + (y % side)) * side + (z % side)
+
+    neighbours: List[List[int]] = []
+    for x in range(side):
+        for y in range(side):
+            for z in range(side):
+                js = [
+                    index(x + 1, y, z), index(x - 1, y, z),
+                    index(x, y + 1, z), index(x, y - 1, z),
+                    index(x, y, z + 1), index(x, y, z - 1),
+                ]
+                if len(set(js)) != 6:
+                    raise RuntimeError("periodic cubic lattice lost a neighbour direction")
+                neighbours.append(sorted(js))
+    return neighbours
 
 
 def local_replenishment_kernel(
@@ -850,7 +864,10 @@ def local_replenishment_kernel(
     if np.any(~np.isfinite(viscosities)) or np.any((viscosities <= 0.0) | (viscosities >= 1.0)):
         raise ValueError("viscosities must be finite and lie strictly between 0 and 1")
     if neighbours is None:
-        neighbours = ring_neighbour_map(n)
+        side = round(n ** (1.0 / 3.0))
+        if side ** 3 != n:
+            raise ValueError("provide neighbours for a non-cubic daemon count")
+        neighbours = periodic_cubic_neighbour_map(side)
     if len(neighbours) != n:
         raise ValueError("neighbour map size does not match weights")
 
@@ -885,6 +902,7 @@ def mean_field_replenishment_equilibrium(
 def replenishment_rule(
     daemons: List[DaemonState],
     Ls: List[float],
+    neighbours: Optional[List[List[int]]] = None,
 ) -> List[float]:
     """One-tick local replenishment r = P^T L.
 
@@ -897,9 +915,7 @@ def replenishment_rule(
         raise ValueError("daemons and Ls must have the same length")
     weights = activity_weights(daemons)
     viscosities = np.asarray([dm.Omega_prev for dm in daemons], dtype=float)
-    P = local_replenishment_kernel(
-        weights, viscosities, ring_neighbour_map(len(daemons))
-    )
+    P = local_replenishment_kernel(weights, viscosities, neighbours)
     costs = np.asarray(Ls, dtype=float)
     return list(np.asarray(P.T @ costs, dtype=float))
 
@@ -939,7 +955,10 @@ def coherence_update(daemon: DaemonState, kappa: float, d: DerivedConstants,
     return kappa * daemon.c + nu
 
 
-def mean_field_truth_target(daemons: List[DaemonState]) -> None:
+def mean_field_truth_target(
+    daemons: List[DaemonState],
+    neighbours: Optional[List[List[int]]] = None,
+) -> None:
     """Update each daemon's tau_t = weighted mean of neighbours' pi.
 
     Implements Section 6.2: tau_i = sum_j w_ij * pi_j / sum_j w_ij,
@@ -949,11 +968,17 @@ def mean_field_truth_target(daemons: List[DaemonState]) -> None:
     eta_flux = 0.5
     eta_geo = 0.5
     n = len(daemons)
-    # ring + periodic neighbours (1D chain representing a Z^3 chain)
+    if neighbours is None:
+        side = round(n ** (1.0 / 3.0))
+        if side ** 3 != n:
+            raise ValueError("provide neighbours for a non-cubic daemon count")
+        neighbours = periodic_cubic_neighbour_map(side)
+    if len(neighbours) != n:
+        raise ValueError("neighbour map size does not match daemons")
     pis = np.array([dm.pi for dm in daemons])
     taus = np.zeros(n)
     for i in range(n):
-        js = [(i - 1) % n, (i + 1) % n]
+        js = neighbours[i]
         w_sum = 0.0
         tau_sum = 0.0
         for j in js:
@@ -971,7 +996,7 @@ def mean_field_truth_target(daemons: List[DaemonState]) -> None:
 
 def consolidation_rule(daemon: DaemonState, d: DerivedConstants,
                        alpha: float = 0.2, beta: float = 0.05,
-                       B_erase: float = 0.0) -> None:
+                       B_erase: float = 0.0) -> float:
     """Low-energy consolidation rule (Section 6.4).
 
     psi probabilities <- (1-alpha) p + alpha * pi
@@ -981,9 +1006,11 @@ def consolidation_rule(daemon: DaemonState, d: DerivedConstants,
     p_new_L = (1 - alpha) * daemon.p_L + alpha * daemon.pi
     daemon.set_binary_probability(float(np.clip(p_new_L, 0.0, 1.0)))
     daemon.b = float(np.clip(daemon.b + beta, 0.0, 1.0))
+    energy_before = daemon.E
     if B_erase > 0:
         daemon.E = float(np.clip(daemon.E - (B_erase / d.N_bit_eq) * d.E_max,
                                  0.0, d.E_max))
+    return energy_before - daemon.E
 
 
 # =============================================================================
@@ -2127,7 +2154,9 @@ def experiment_03_closed_universe_conservation(d: DerivedConstants) -> Dict[str,
     this keeps every daemon in the interior of [0, E_max], so conservation
     holds exactly.
     """
-    n_daemons = 8
+    lattice_side = 5
+    n_daemons = lattice_side ** 3
+    neighbours = periodic_cubic_neighbour_map(lattice_side)
     n_ticks = 200
     rng = np.random.default_rng(123)
     # Compute the operating-point Omega so first-tick dOmega is small
@@ -2159,13 +2188,13 @@ def experiment_03_closed_universe_conservation(d: DerivedConstants) -> Dict[str,
     clip_events = 0
     sum_r_minus_L_history = []
     for _ in range(n_ticks):
-        mean_field_truth_target(daemons)
+        mean_field_truth_target(daemons, neighbours)
         Ls, Os, kappas = [], [], []
         for dm in daemons:
             O, k, _ = viscosity_update(dm, d)
             L, _ = axcore_lagrangian(dm, d, O, cfg)
             Ls.append(L); Os.append(O); kappas.append(k)
-        rs = replenishment_rule(daemons, Ls)
+        rs = replenishment_rule(daemons, Ls, neighbours)
         # Verify the theorem: sum r = sum L (always true by construction)
         sum_r_minus_L_history.append(abs(sum(rs) - sum(Ls)))
         for i, dm in enumerate(daemons):
@@ -2220,8 +2249,10 @@ def experiment_04_spectral_gap_weights(d: DerivedConstants) -> Dict[str, Any]:
 
 
 def experiment_05_mean_field_closure(d: DerivedConstants) -> Dict[str, Any]:
-    """Mean-field tau_t closure: build a lattice, iterate, measure frustration."""
-    n = 12
+    """Mean-field tau_t closure on the production 5x5x5 periodic lattice."""
+    lattice_side = 5
+    n = lattice_side ** 3
+    neighbours = periodic_cubic_neighbour_map(lattice_side)
     daemons = []
     rng = np.random.default_rng(3)
     for i in range(n):
@@ -2238,7 +2269,7 @@ def experiment_05_mean_field_closure(d: DerivedConstants) -> Dict[str, Any]:
     n_ticks = 100
     frustrations = []
     for _ in range(n_ticks):
-        mean_field_truth_target(daemons)
+        mean_field_truth_target(daemons, neighbours)
         for dm in daemons:
             dm.pi = float(np.clip(dm.pi + 0.01 * (dm.tau - dm.pi), 0, 1))
         f = sum(abs(dm.pi - dm.tau) for dm in daemons) / n
@@ -2679,9 +2710,13 @@ class MasterChainTrajectory:
     thermal_spillover: List[float] = field(default_factory=list)
     thermal_exhaust: List[float] = field(default_factory=list)
     starvation_deficit: List[float] = field(default_factory=list)
+    landauer_debit: List[float] = field(default_factory=list)
+    ledger_total: List[float] = field(default_factory=list)
     total_thermal_spillover: float = 0.0
     total_thermal_exhaust: float = 0.0
     total_starvation_deficit: float = 0.0
+    total_landauer_debit: float = 0.0
+    max_ledger_closure_residual: float = 0.0
     microcell_quantization_events: int = 0
     max_microcell_quantization_tv: float = 0.0
     joint_torsion_quantization_events: int = 0
@@ -2749,11 +2784,11 @@ def joint_quantize_torsion_pair(dm_a: DaemonState,
 
 
 def run_master_chain(d: DerivedConstants,
-                     n_daemons: int = 12,
+                     lattice_side: int = 5,
                      n_ticks: int = 400,
                      seed: int = 17,
                      baryonic_load: float = 0.0) -> MasterChainTrajectory:
-    """Run the full FPM master chain on a small ring of daemons.
+    """Run the full FPM master chain on a finite periodic cubic lattice.
 
     The daemons start in the safe interior of [0, E_max] with Omega_prev set
     to the typical operating viscosity, so the first-tick smoothness term is
@@ -2761,6 +2796,10 @@ def run_master_chain(d: DerivedConstants,
     closed-universe conservation theorem (sum r = sum L) holds without
     significant clip events.
     """
+    if lattice_side < 3:
+        raise ValueError("lattice_side must be at least 3")
+    n_daemons = lattice_side ** 3
+    neighbours = periodic_cubic_neighbour_map(lattice_side)
     rng = np.random.default_rng(seed)
     # Compute the operating-point Omega so we can initialise Omega_prev there
     e_t_op = 0.75                              # E ~ 0.5, E_max ~ 0.667
@@ -2794,7 +2833,7 @@ def run_master_chain(d: DerivedConstants,
 
     for t in range(n_ticks):
         # 1. Mean-field truth target (closed-universe constraint)
-        mean_field_truth_target(daemons)
+        mean_field_truth_target(daemons, neighbours)
 
         # 2. Viscosity pipeline + Lagrangian for each daemon
         Ls, Os, kappas, C_sems, C_geos, smooths = [], [], [], [], [], []
@@ -2806,7 +2845,7 @@ def run_master_chain(d: DerivedConstants,
             smooths.append(comp["smooth"])
 
         # 3. Closed energy ledger: replenishment (sum r = sum L by construction)
-        rs = replenishment_rule(daemons, Ls)
+        rs = replenishment_rule(daemons, Ls, neighbours)
 
         # 4. State updates with active boundary resolver. Overflow first
         # attempts local Z^3-neighbor spillover; only unaccepted overflow is
@@ -2814,6 +2853,7 @@ def run_master_chain(d: DerivedConstants,
         tick_exhaust = 0.0
         tick_spillover = 0.0
         tick_starvation = 0.0
+        tick_landauer_debit = 0.0
         joint_processed = set()
         raw_energies = [dm.E - Ls[i] + rs[i] for i, dm in enumerate(daemons)]
         overflows = [0.0] * n_daemons
@@ -2834,23 +2874,15 @@ def run_master_chain(d: DerivedConstants,
         for i, overflow in enumerate(overflows):
             if overflow <= 0.0:
                 continue
-            left_idx = (i - 1) % n_daemons
-            right_idx = (i + 1) % n_daemons
-            cap_left = max(0.0, d.E_max - daemons[left_idx].E)
-            cap_right = max(0.0, d.E_max - daemons[right_idx].E)
-            total_cap = cap_left + cap_right
+            js = neighbours[i]
+            capacities = [max(0.0, d.E_max - daemons[j].E) for j in js]
+            total_cap = sum(capacities)
             if total_cap <= 0.0:
                 tick_exhaust += overflow
                 continue
-            if overflow <= total_cap:
-                spill_left = overflow * (cap_left / total_cap)
-                spill_right = overflow * (cap_right / total_cap)
-            else:
-                spill_left = cap_left
-                spill_right = cap_right
-            daemons[left_idx].E += spill_left
-            daemons[right_idx].E += spill_right
-            routed = spill_left + spill_right
+            routed = min(overflow, total_cap)
+            for j, capacity in zip(js, capacities):
+                daemons[j].E += routed * capacity / total_cap
             tick_spillover += routed
             tick_exhaust += max(0.0, overflow - routed)
 
@@ -2889,8 +2921,10 @@ def run_master_chain(d: DerivedConstants,
                         tick_exhaust += pull_exhaust
                         traj.boundary_clip_events += int(pull_exhaust > 0.0)
                         partner.E = pulled_E
-                    consolidation_rule(dm, d, alpha=0.02, beta=0.005, B_erase=0.1)
-                    consolidation_rule(partner, d, alpha=0.02, beta=0.005, B_erase=0.1)
+                    tick_landauer_debit += consolidation_rule(
+                        dm, d, alpha=0.02, beta=0.005, B_erase=0.1)
+                    tick_landauer_debit += consolidation_rule(
+                        partner, d, alpha=0.02, beta=0.005, B_erase=0.1)
                     q = joint_quantize_torsion_pair(dm, partner, d)
                     traj.joint_torsion_quantization_events += 1
                     traj.microcell_quantization_events += 2
@@ -2906,7 +2940,8 @@ def run_master_chain(d: DerivedConstants,
                 else:
                     dm.b = float(np.clip(dm.b + 0.003, 0.0, 1.0))
                     # consolidation kicks in (Landauer debit)
-                    consolidation_rule(dm, d, alpha=0.02, beta=0.005, B_erase=0.1)
+                    tick_landauer_debit += consolidation_rule(
+                        dm, d, alpha=0.02, beta=0.005, B_erase=0.1)
                     q = dm.quantize_microcells(d)
                     traj.microcell_quantization_events += 1
                     traj.max_microcell_quantization_tv = max(
@@ -2916,8 +2951,22 @@ def run_master_chain(d: DerivedConstants,
 
         # 5. Record trajectory
         final_total_E = sum(dm.E for dm in daemons)
+        traj.total_thermal_spillover += tick_spillover
+        traj.total_thermal_exhaust += tick_exhaust
+        traj.total_starvation_deficit += tick_starvation
+        traj.total_landauer_debit += tick_landauer_debit
+        # Finite-capacity clipping is represented explicitly: starvation is a
+        # signed liability, exhaust and Landauer erasure are paid debits.
+        ledger_total = (final_total_E - traj.total_starvation_deficit
+                        + traj.total_thermal_exhaust
+                        + traj.total_landauer_debit)
+        traj.max_ledger_closure_residual = max(
+            traj.max_ledger_closure_residual,
+            abs(ledger_total - initial_total_E),
+        )
         traj.t.append(t)
         traj.total_E.append(float(final_total_E))
+        traj.ledger_total.append(float(ledger_total))
         traj.mean_L.append(float(np.mean(Ls)))
         traj.mean_Omega.append(float(np.mean(Os)))
         traj.mean_kappa.append(float(np.mean(kappas)))
@@ -2932,9 +2981,7 @@ def run_master_chain(d: DerivedConstants,
         traj.thermal_spillover.append(tick_spillover)
         traj.thermal_exhaust.append(tick_exhaust)
         traj.starvation_deficit.append(tick_starvation)
-        traj.total_thermal_spillover += tick_spillover
-        traj.total_thermal_exhaust += tick_exhaust
-        traj.total_starvation_deficit += tick_starvation
+        traj.landauer_debit.append(tick_landauer_debit)
 
     return traj
 
@@ -3009,10 +3056,13 @@ def plot_all(d: DerivedConstants, axioms: Axioms,
 
     # 3. Master chain trajectory
     fig, axes = plt.subplots(2, 2, figsize=(11, 7), constrained_layout=True)
-    axes[0, 0].plot(traj.t, traj.total_E, color="#1a4a6a")
-    axes[0, 0].set_title("Total energy (closed ledger)")
+    axes[0, 0].plot(traj.t, traj.total_E, color="#1a4a6a", label="stored E")
+    axes[0, 0].plot(traj.t, traj.ledger_total, color="#2d7a4a",
+                    ls="--", label="closed ledger")
+    axes[0, 0].set_title("Stored energy and closed ledger")
     axes[0, 0].set_xlabel("tick")
-    axes[0, 0].set_ylabel("sum E")
+    axes[0, 0].set_ylabel("energy")
+    axes[0, 0].legend(fontsize=8)
     axes[0, 1].plot(traj.t, traj.mean_L, color="#a83232", label="L")
     axes[0, 1].plot(traj.t, traj.mean_C_sem, color="#2d7a4a", label="C_sem",
                     ls="--", lw=0.8)
@@ -3502,15 +3552,19 @@ def main() -> None:
         print(f"  [{e['verdict']:>16s}]  #{e.get('name',''):38s}  = {vs}")
     print()
 
-    print("Layer 9: Running the master chain (12 daemons, 400 ticks)...")
-    traj = run_master_chain(d, n_daemons=12, n_ticks=400, seed=17,
+    print("Layer 9: Running the master chain (5x5x5 periodic lattice, 400 ticks)...")
+    lattice_side = 5
+    traj = run_master_chain(d, lattice_side=lattice_side, n_ticks=400, seed=17,
                             baryonic_load=0.0)
-    print(f"  Initial E = {traj.total_E[0]:.6f}")
-    print(f"  Final E   = {traj.total_E[-1]:.6f}")
+    print(f"  Initial stored E = {lattice_side ** 3 * 0.5:.6f}")
+    print(f"  Final stored E   = {traj.total_E[-1]:.6f}")
+    print(f"  Final closed-ledger total:    {traj.ledger_total[-1]:.6f}")
+    print(f"  Max ledger closure residual:  {traj.max_ledger_closure_residual:.3e}")
     print(f"  Boundary resolver events:     {traj.boundary_clip_events}")
     print(f"  Thermal spillover routed:     {traj.total_thermal_spillover:.6f}")
     print(f"  External exhaust ledger:      {traj.total_thermal_exhaust:.6f}")
     print(f"  Starvation deficit ledger:    {traj.total_starvation_deficit:.6f}")
+    print(f"  Landauer debit ledger:        {traj.total_landauer_debit:.6e}")
     print(f"  Microcell quantization events: {traj.microcell_quantization_events}")
     print(f"  Joint torsion quantizations:   {traj.joint_torsion_quantization_events}")
     print(f"  Linked ZOMBIE pulls:           {traj.linked_zombie_pulls}")
@@ -3581,7 +3635,10 @@ def main() -> None:
         "calibration": to_serialisable(cal),
         "experiments": to_serialisable(experiments),
         "master_chain": {
-            "n_daemons": 12,
+            "lattice_geometry": "finite periodic cubic lattice (discrete 3-torus)",
+            "lattice_side": lattice_side,
+            "n_daemons": lattice_side ** 3,
+            "neighbours_per_daemon": 6,
             "n_ticks": 400,
             "t": traj.t,
             "total_E": traj.total_E,
@@ -3597,9 +3654,13 @@ def main() -> None:
             "thermal_spillover": traj.thermal_spillover,
             "thermal_exhaust": traj.thermal_exhaust,
             "starvation_deficit": traj.starvation_deficit,
+            "landauer_debit": traj.landauer_debit,
+            "ledger_total": traj.ledger_total,
             "total_thermal_spillover": traj.total_thermal_spillover,
             "total_thermal_exhaust": traj.total_thermal_exhaust,
             "total_starvation_deficit": traj.total_starvation_deficit,
+            "total_landauer_debit": traj.total_landauer_debit,
+            "max_ledger_closure_residual": traj.max_ledger_closure_residual,
             "microcell_quantization_events": traj.microcell_quantization_events,
             "max_microcell_quantization_tv": traj.max_microcell_quantization_tv,
             "joint_torsion_quantization_events": traj.joint_torsion_quantization_events,

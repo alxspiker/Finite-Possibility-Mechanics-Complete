@@ -746,7 +746,7 @@ def chart_closure_diagram():
         # (x, y, w, h, title, eq, color)
         (0.5, 3.5, 4.5, 2.3, 'Energy Closure',
          'r_t = P_t^T L_t\nE_i(t+1)-E_i(t)+Sum_j J_ij=0\n\n'
-         'Nearest-neighbor flux;\nregional boundary balance.\nExpanded boundary ledger.',
+         'Interior local conservation;\nregional boundary balance.\nExpanded signed ledger at boundaries.',
          COL_BLUE),
         (6.0, 3.5, 4.5, 2.3, 'Entropy Closure',
          'Delta S_sem + Delta S_thermo >= 0\n\n'

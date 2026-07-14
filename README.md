@@ -62,7 +62,7 @@ This runs 10 derivation checks plus the local continuity bridge audit. All check
 pip install matplotlib numpy
 python scripts/fpm_simulator.py
 ```
-This re-derives all constants, runs the 16-experiment validation suite, and writes `outputs/fpm_results.json` plus charts under `simulator_charts/`.
+This re-derives all constants, runs the 16-experiment validation suite on a finite periodic 5×5×5 cubic lattice (a discrete 3-torus), and writes `outputs/fpm_results.json` plus charts under `simulator_charts/`.
 
 
 ### Run the local energy-bridge audit

@@ -1393,6 +1393,13 @@ def build_part_iv():
         "P<sub>t</sub> is non-negative, nearest-neighbor supported, and "
         "row-stochastic. The microscopic one-tick replenishment is:",
         styles['Body']))
+    flow.append(Paragraph(
+        "The numerical runtime instantiates this graph as a finite periodic "
+        "5&times;5&times;5 cubic lattice (a discrete 3-torus). Thus every "
+        "daemon has six spatial neighbors and d<sub>max</sub>=6. This is a "
+        "finite simulation of the Z<sup>3</sup> local geometry, not a claim "
+        "to execute an infinite lattice.",
+        styles['Body']))
     flow.extend(eq(
         r"r_{i,t}=\sum_j P_{ji,t}\mathcal{L}_{j,t}"
         r"=\left(P_t^{T}\mathbf{L}_t\right)_i,"
@@ -1439,8 +1446,10 @@ def build_part_iv():
         "The simulator separately audits row stochasticity, detailed "
         "balance, antisymmetric edge flux, exact nodewise continuity, the "
         "one-edge-per-tick support cone, and convergence to the mean-field "
-        "equilibrium. Boundary spillover, exhaust, and starvation remain in "
-        "the expanded ledger.", styles['Body']))
+        "equilibrium. Ordinary interior replenishment obeys exact local "
+        "conservation. When capacity boundaries, starvation, Landauer erasure, "
+        "or explicit torsion-link operations occur, the expanded signed ledger "
+        "remains conserved.", styles['Body']))
 
     flow.append(Paragraph("6.2 Mean-Field Replenishment Equilibrium", styles['H2']))
     flow.append(Paragraph(
@@ -1549,9 +1558,10 @@ def build_part_iv():
         "<b>Closure Principle 1 (Energy Closure and Local Transport).</b> "
         "Let P<sub>t</sub> be non-negative, nearest-neighbor supported, and "
         "row-stochastic, with r<sub>t</sub>=P<sub>t</sub><super>T</super>"
-        "L<sub>t</sub>. Interior ticks conserve total internal energy and obey "
-        "an exact regional boundary-flux law. Capacity-boundary events are "
-        "closed by the expanded spillover, exhaust, and starvation ledger."))
+        "L<sub>t</sub>. Ordinary interior replenishment obeys exact local "
+        "conservation and an exact regional boundary-flux law. When capacity "
+        "boundaries, starvation, Landauer erasure, or explicit torsion-link "
+        "operations occur, the expanded signed ledger remains conserved."))
     flow.extend(eq(
         r"\sum_i r_{i,t}=\sum_i\sum_jP_{ji,t}\mathcal{L}_{j,t}"
         r"=\sum_j\mathcal{L}_{j,t}\sum_iP_{ji,t}"
@@ -1567,14 +1577,23 @@ def build_part_iv():
         "&sum;<sub>i</sub>P<sub>ji,t</sub>=1 for every source j, so "
         "&sum;<sub>i</sub>r<sub>i,t</sub>=&sum;<sub>j</sub>L<sub>j,t</sub>. "
         "Substitution into E<sub>i,t+1</sub>=E<sub>i,t</sub>-L<sub>i,t</sub>+"
-        "r<sub>i,t</sub> conserves total internal energy. The edge quantity "
-        "J<sub>i&rarr;j,t</sub> is antisymmetric. Its outward sum equals "
-        "L<sub>i,t</sub>-r<sub>i,t</sub>, proving the nodewise continuity "
-        "equation. Summing over V cancels every internal edge pair, leaving "
-        "only edges crossing the spatial boundary. At E<sub>max</sub>, local "
-        "overflow is offered to adjacent capacity before exhaust is logged; "
-        "at zero, unpaid work is starvation deficit. Adding these terms "
-        "restores the expanded global ledger. <i>QED</i>"))
+        "r<sub>i,t</sub> conserves total internal energy for the ordinary "
+        "interior update. The edge quantity J<sub>i&rarr;j,t</sub> is "
+        "antisymmetric. Its outward sum equals L<sub>i,t</sub>-r<sub>i,t</sub>, "
+        "proving the nodewise continuity equation. Summing over V cancels every "
+        "internal edge pair, leaving only edges crossing the spatial boundary. "
+        "At E<sub>max</sub>, local overflow is offered to adjacent capacity before "
+        "exhaust is logged; at zero, unpaid work is starvation deficit. Landauer "
+        "and explicit torsion-link terms are separately recorded. These signed "
+        "terms restore the expanded global ledger. <i>QED</i>"))
+    flow.extend(eq(
+        r"E_{\mathrm{ledger}}(t)=\sum_i E_i(t)-E_{\mathrm{starvation}}(t)"
+        r"+E_{\mathrm{exhaust}}(t)+E_{\mathrm{Landauer}}(t)"
+        r"=E_{\mathrm{ledger}}(0)"))
+    flow.append(Paragraph(
+        "The runtime reports both stored energy and this expanded ledger. "
+        "The latter, rather than stored energy alone, is the conserved quantity "
+        "when finite-capacity clipping or paid erasure is active.", styles['Result']))
     flow.append(Paragraph(
         "<b>Continuum implication.</b> Dividing the exact finite-volume balance "
         "by &Delta;t&Delta;x<sup>3</sup> gives the standard conservative "
