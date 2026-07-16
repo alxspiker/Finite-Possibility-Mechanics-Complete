@@ -781,12 +781,21 @@ def c0_plus_terms(d: DerivedConstants, L_axcore: float,
 
 
 def route_cost_channels(daemon: DaemonState, total_L: float) -> np.ndarray:
-    """Distribute total route cost over the native 9 complex carrier channels."""
+    """Partition one site's paid action across its nine carrier channels.
+
+    Absolute route-ledger entries provide non-negative directional weights.
+    Sum normalization makes the channel costs a true decomposition:
+    ``sum(route_cost_channels(dm, L)) == L`` up to floating-point roundoff.
+    """
     weights = np.abs(daemon.R.reshape(9)).astype(float)
     if float(np.sum(weights)) <= 0.0:
         weights = np.ones(9, dtype=float)
-    weights = weights / float(np.mean(weights))
-    return np.maximum(0.0, total_L * weights)
+    weights = weights / float(np.sum(weights))
+    channel_costs = np.maximum(0.0, total_L * weights)
+    if not math.isclose(float(np.sum(channel_costs)), max(0.0, total_L),
+                        rel_tol=1e-12, abs_tol=1e-15):
+        raise RuntimeError("channel route costs do not sum to the site action")
+    return channel_costs
 
 
 def activity_weights(daemons: List[DaemonState], eta_geo: float = 0.1) -> np.ndarray:
@@ -943,7 +952,7 @@ def local_energy_flux_residual(
 
 def coherence_update(daemon: DaemonState, kappa: float, d: DerivedConstants,
                      xi_floor: float = 1e-4) -> complex:
-    """c_{t+1} = kappa * c_t + nu_t ; |nu| <= xi_max * (E/E_max)^delta + xi_floor.
+    """c_{t+1} = kappa * c_t + xi_t with a bounded complex disturbance.
 
     Returns the new coherence amplitude c_{t+1}.
     """
@@ -951,8 +960,12 @@ def coherence_update(daemon: DaemonState, kappa: float, d: DerivedConstants,
     xi_max = 0.05
     e_t = max(0.0, min(1.0, daemon.E / d.E_max))
     bound = xi_max * e_t ** delta + xi_floor
-    nu = (np.random.randn() + 1j * np.random.randn()) * bound / math.sqrt(2)
-    return kappa * daemon.c + nu
+    direction = np.random.randn() + 1j * np.random.randn()
+    magnitude = abs(direction)
+    if magnitude > 1.0:
+        direction /= magnitude
+    xi = direction * bound
+    return kappa * daemon.c + xi
 
 
 def mean_field_truth_target(
@@ -1123,18 +1136,25 @@ def theorem5_alpha_pp_convergence(d: DerivedConstants) -> Dict[str, float]:
     fT = 2.0 / 3.0
     a0 = C_le9 + fT * C10
     a1 = a0 - 1.0 / math.sqrt(2.0)
-    target = 702.628349
     # Step 3 quadratic
     b1 = 1.5
     a2 = (- (9.0 - a1) + math.sqrt((9.0 - a1) ** 2 + 4.0 * (9.0 * a1 + b1))) / 2.0
     a3 = iterate_alpha_pp_counterterm(a1, a2, d.L_rest)
+    fixed_point_rhs = (
+        a1 + b1 / (a3 + 9.0)
+        + (7.5 - d.L_rest) / ((a3 + 9.0) ** 2)
+    )
+    fixed_point_residual_abs = abs(a3 - fixed_point_rhs)
+    fixed_point_residual_rel = fixed_point_residual_abs / abs(a3)
     return {
         "alpha_PP_step0_shell_fill": a0,
         "alpha_PP_step1_blade_subtraction": a1,
         "alpha_PP_step2_endcap": a2,
         "alpha_PP_step3_counterterm": a3,
         "final_alpha_PP": d.alpha_PP,
-        "residual_relative": abs(d.alpha_PP - target) / target,
+        "fixed_point_rhs": fixed_point_rhs,
+        "residual_absolute": fixed_point_residual_abs,
+        "residual_relative": fixed_point_residual_rel,
     }
 
 
@@ -1519,7 +1539,9 @@ def bridge_time_dilation(d: DerivedConstants,
 
 
 def bridge_cmb_oscillator(d: DerivedConstants,
-                          ells: Optional[np.ndarray] = None) -> Dict[str, Any]:
+                          ells: Optional[np.ndarray] = None,
+                          oscillation_amplitude: float = 0.6,
+                          oscillation_scale: float = 80.0) -> Dict[str, Any]:
     """Bridge 5: holographic horizon + stripped Boltzmann oscillator.
 
     Outputs A_FPM, n_s, r, ell_D, plus a simple TT source spectrum
@@ -1527,11 +1549,16 @@ def bridge_cmb_oscillator(d: DerivedConstants,
     """
     if ells is None:
         ells = np.linspace(2, 2500, 600)
-    # CMB TT source spectrum
+    # Compact phenomenological oscillation template.  These two values are
+    # constitutive bridge inputs, not deductions from the FPM substrate and
+    # not parameters estimated by this routine.
+    if oscillation_amplitude < 0.0 or oscillation_scale <= 0.0:
+        raise ValueError("CMB oscillation amplitude must be nonnegative and scale positive")
     S = (d.A_FPM
          * (ells / d.ell_A) ** (d.n_s - 1.0)
          * np.exp(-(ells / d.ell_D) ** 2)
-         * (1.0 + 0.6 * np.sin(ells / 80.0) ** 2))
+         * (1.0 + oscillation_amplitude
+            * np.sin(ells / oscillation_scale) ** 2))
     return {
         "ells": ells.tolist(),
         "S": S.tolist(),
@@ -1541,6 +1568,11 @@ def bridge_cmb_oscillator(d: DerivedConstants,
         "ell_D": d.ell_D,
         "ell_A": d.ell_A,
         "ledger_inertia_ratio": d.ledger_inertia_ratio,
+        "oscillation_amplitude": float(oscillation_amplitude),
+        "oscillation_scale": float(oscillation_scale),
+        "oscillation_parameter_status": (
+            "CONSTITUTIVE_FIXED_TEMPLATE_NOT_DERIVED_OR_FITTED_BY_RUNTIME"
+        ),
     }
 
 
@@ -2312,30 +2344,43 @@ def experiment_07_bounded_asymptotics(d: DerivedConstants) -> Dict[str, Any]:
 
 
 def experiment_08_semantic_entropy_conservation(d: DerivedConstants) -> Dict[str, Any]:
-    """Verify Delta S_sem + Delta S_thermo >= 0 saturated at every consolidation."""
+    """Verify dimensionless semantic-plus-bath entropy closure.
+
+    Semantic entropy is measured in nats.  The bath entropy is divided by
+    Boltzmann's constant before the two quantities are added.
+    """
     daemons = [DaemonState(E=d.E_max * 0.3, p_L=0.5, p_R=0.5,
-                           R=np.eye(3) * 0.2, pi=0.5, tau=0.5,
+                           R=np.eye(3) * 0.2, pi=1.0, tau=0.5,
                            Omega_prev=d.Omega_max)]
-    S_sem_before = -0.5 * math.log(0.5) - 0.5 * math.log(0.5)
-    # Simulate a consolidation step that erases some semantic entropy
-    B_erase = 1.0
-    consolidation_rule(daemons[0], d, B_erase=B_erase)
-    # After consolidation, p moves toward pi (more deterministic)
-    p = daemons[0].p_L
-    p = max(min(p, 1 - 1e-9), 1e-9)
-    S_sem_after = -p * math.log(p) - (1 - p) * math.log(1 - p)
+    def binary_entropy(p: float) -> float:
+        terms = [x for x in (p, 1.0 - p) if x > 0.0]
+        return -sum(x * math.log(x) for x in terms)
+
+    S_sem_before = binary_entropy(daemons[0].p_L)
+    # Full consolidation into the fallback prior removes one binary distinction.
+    p_after_target = daemons[0].pi
+    S_sem_after_target = binary_entropy(p_after_target)
+    dS_sem_target = S_sem_after_target - S_sem_before
+    B_erase = max(0.0, -dS_sem_target / math.log(2.0))
+    normalized_energy_debit = consolidation_rule(
+        daemons[0], d, alpha=1.0, B_erase=B_erase)
+    S_sem_after = binary_entropy(daemons[0].p_L)
     dS_sem = S_sem_after - S_sem_before
-    # Landauer thermodynamic entropy raise = k_B ln2 * B_erase (per bit)
-    dS_thermo = K_B * math.log(2.0) * B_erase
-    total = dS_sem + dS_thermo
+    # Minimum bath entropy: Delta S_bath / k_B = B_erase ln 2.
+    dS_bath_over_kB = math.log(2.0) * B_erase
+    dS_bath_J_per_K = K_B * dS_bath_over_kB
+    total_dimensionless = dS_sem + dS_bath_over_kB
     return {
         "name": "Semantic-entropy conservation",
         "key_metric": "Ledger closure",
-        "value": "Saturated" if total >= -1e-12 else "Violated",
+        "value": "Saturated" if abs(total_dimensionless) <= 1e-12 else "Violated",
+        "B_erase_bit_equivalents": float(B_erase),
         "dS_sem": float(dS_sem),
-        "dS_thermo": float(dS_thermo),
-        "total": float(total),
-        "verdict": "LEDGER_PASS" if total >= -1e-12 else "FAIL",
+        "dS_bath_over_kB": float(dS_bath_over_kB),
+        "dS_bath_J_per_K": float(dS_bath_J_per_K),
+        "dimensionless_total": float(total_dimensionless),
+        "normalized_energy_debit": float(normalized_energy_debit),
+        "verdict": "LEDGER_PASS" if total_dimensionless >= -1e-12 else "FAIL",
     }
 
 
@@ -2711,6 +2756,9 @@ class MasterChainTrajectory:
     thermal_exhaust: List[float] = field(default_factory=list)
     starvation_deficit: List[float] = field(default_factory=list)
     landauer_debit: List[float] = field(default_factory=list)
+    site_thermal_exhaust: List[List[float]] = field(default_factory=list)
+    site_starvation_deficit: List[List[float]] = field(default_factory=list)
+    site_landauer_debit: List[List[float]] = field(default_factory=list)
     ledger_total: List[float] = field(default_factory=list)
     total_thermal_spillover: float = 0.0
     total_thermal_exhaust: float = 0.0
@@ -2854,6 +2902,9 @@ def run_master_chain(d: DerivedConstants,
         tick_spillover = 0.0
         tick_starvation = 0.0
         tick_landauer_debit = 0.0
+        site_exhaust = [0.0] * n_daemons
+        site_starvation = [0.0] * n_daemons
+        site_landauer = [0.0] * n_daemons
         joint_processed = set()
         raw_energies = [dm.E - Ls[i] + rs[i] for i, dm in enumerate(daemons)]
         overflows = [0.0] * n_daemons
@@ -2866,6 +2917,7 @@ def run_master_chain(d: DerivedConstants,
             elif raw_E < 0.0:
                 starvation = -raw_E
                 tick_starvation += starvation
+                site_starvation[i] += starvation
                 dm.E = 0.0
                 traj.boundary_clip_events += 1
             else:
@@ -2879,12 +2931,15 @@ def run_master_chain(d: DerivedConstants,
             total_cap = sum(capacities)
             if total_cap <= 0.0:
                 tick_exhaust += overflow
+                site_exhaust[i] += overflow
                 continue
             routed = min(overflow, total_cap)
             for j, capacity in zip(js, capacities):
                 daemons[j].E += routed * capacity / total_cap
             tick_spillover += routed
-            tick_exhaust += max(0.0, overflow - routed)
+            exhaust = max(0.0, overflow - routed)
+            tick_exhaust += exhaust
+            site_exhaust[i] += exhaust
 
         for i, dm in enumerate(daemons):
             # Native Born-carrier runtime update: route cost drives U(1) phase.
@@ -2919,12 +2974,16 @@ def run_master_chain(d: DerivedConstants,
                         pulled_E = min(partner.E, 0.20 * d.E_max)
                         pull_exhaust = max(0.0, partner.E - pulled_E)
                         tick_exhaust += pull_exhaust
+                        site_exhaust[partner_idx] += pull_exhaust
                         traj.boundary_clip_events += int(pull_exhaust > 0.0)
                         partner.E = pulled_E
-                    tick_landauer_debit += consolidation_rule(
+                    debit_a = consolidation_rule(
                         dm, d, alpha=0.02, beta=0.005, B_erase=0.1)
-                    tick_landauer_debit += consolidation_rule(
+                    debit_b = consolidation_rule(
                         partner, d, alpha=0.02, beta=0.005, B_erase=0.1)
+                    tick_landauer_debit += debit_a + debit_b
+                    site_landauer[i] += debit_a
+                    site_landauer[partner_idx] += debit_b
                     q = joint_quantize_torsion_pair(dm, partner, d)
                     traj.joint_torsion_quantization_events += 1
                     traj.microcell_quantization_events += 2
@@ -2940,8 +2999,10 @@ def run_master_chain(d: DerivedConstants,
                 else:
                     dm.b = float(np.clip(dm.b + 0.003, 0.0, 1.0))
                     # consolidation kicks in (Landauer debit)
-                    tick_landauer_debit += consolidation_rule(
+                    debit = consolidation_rule(
                         dm, d, alpha=0.02, beta=0.005, B_erase=0.1)
+                    tick_landauer_debit += debit
+                    site_landauer[i] += debit
                     q = dm.quantize_microcells(d)
                     traj.microcell_quantization_events += 1
                     traj.max_microcell_quantization_tv = max(
@@ -2950,6 +3011,12 @@ def run_master_chain(d: DerivedConstants,
                     )
 
         # 5. Record trajectory
+        if not math.isclose(sum(site_exhaust), tick_exhaust, rel_tol=0.0, abs_tol=1e-12):
+            raise RuntimeError("site exhaust ledger does not match the tick total")
+        if not math.isclose(sum(site_starvation), tick_starvation, rel_tol=0.0, abs_tol=1e-12):
+            raise RuntimeError("site starvation ledger does not match the tick total")
+        if not math.isclose(sum(site_landauer), tick_landauer_debit, rel_tol=0.0, abs_tol=1e-12):
+            raise RuntimeError("site Landauer ledger does not match the tick total")
         final_total_E = sum(dm.E for dm in daemons)
         traj.total_thermal_spillover += tick_spillover
         traj.total_thermal_exhaust += tick_exhaust
@@ -2982,6 +3049,9 @@ def run_master_chain(d: DerivedConstants,
         traj.thermal_exhaust.append(tick_exhaust)
         traj.starvation_deficit.append(tick_starvation)
         traj.landauer_debit.append(tick_landauer_debit)
+        traj.site_thermal_exhaust.append(site_exhaust)
+        traj.site_starvation_deficit.append(site_starvation)
+        traj.site_landauer_debit.append(site_landauer)
 
     return traj
 
@@ -3200,8 +3270,8 @@ def plot_all(d: DerivedConstants, axioms: Axioms,
             alpha_res["alpha_PP_step2_endcap"],
             alpha_res["alpha_PP_step3_counterterm"]]
     ax.plot(steps, vals, "o-", color="#1a2a4a", lw=1.5)
-    ax.axhline(702.628349, ls="--", color="grey", lw=0.7,
-               label="target 702.628349")
+    ax.axhline(alpha_res["final_alpha_PP"], ls="--", color="grey", lw=0.7,
+               label="converged fixed point")
     for i, v in enumerate(vals):
         ax.text(i, v + 0.05, f"{v:.6f}", fontsize=7, ha="center")
     ax.set_ylabel("alpha_PP")
@@ -3216,7 +3286,7 @@ def plot_all(d: DerivedConstants, axioms: Axioms,
     fig, ax = plt.subplots(figsize=(9, 4.5), constrained_layout=True)
     closures = [
         ("Energy", "r=P^T L; dE_i+sum J_ij=0", "local flux + A3 closure"),
-        ("Entropy", "dS_sem + dS_thermo >= 0", "Landauer saturation"),
+        ("Entropy", "dS_sem + dS_bath/k_B >= 0", "Landauer saturation"),
         ("Angular momentum", "closed int A dS = 0", "pure gauge torsion"),
         ("Information", "all 8 bridges f(L_t)", "single currency"),
     ]
@@ -3625,6 +3695,11 @@ def main() -> None:
                 "ell_D": b_cmb["ell_D"],
                 "ell_A": b_cmb["ell_A"],
                 "ledger_inertia_ratio": b_cmb["ledger_inertia_ratio"],
+                "oscillation_amplitude": b_cmb["oscillation_amplitude"],
+                "oscillation_scale": b_cmb["oscillation_scale"],
+                "oscillation_parameter_status": b_cmb[
+                    "oscillation_parameter_status"
+                ],
             },
             "born_distribution": to_serialisable(b_born),
             "joint_torsion_bell_chsh": to_serialisable(b_bell),
@@ -3655,6 +3730,9 @@ def main() -> None:
             "thermal_exhaust": traj.thermal_exhaust,
             "starvation_deficit": traj.starvation_deficit,
             "landauer_debit": traj.landauer_debit,
+            "site_thermal_exhaust": traj.site_thermal_exhaust,
+            "site_starvation_deficit": traj.site_starvation_deficit,
+            "site_landauer_debit": traj.site_landauer_debit,
             "ledger_total": traj.ledger_total,
             "total_thermal_spillover": traj.total_thermal_spillover,
             "total_thermal_exhaust": traj.total_thermal_exhaust,

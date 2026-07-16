@@ -1,3 +1,6 @@
 __pycache__/
+.DS_Store
 _eq_cache_*/
 tmp_pdf_check/
+/tmp/
+youtube_transcripts/
