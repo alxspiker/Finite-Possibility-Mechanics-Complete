@@ -1419,11 +1419,14 @@ def audit_sparc_fpm_bridge(d: DerivedConstants) -> Dict[str, Any]:
         return {
             "available": False,
             "reason": "SPARC local data not found. Set FPM_SPARC_DATA_DIR to run the audit.",
-            "rmse_legacy_single_source_km_s": SPARC_LEGACY_RMSE_KM_S,
-            "rmse_split_source_km_s": SPARC_SPLIT_SOURCE_RMSE_KM_S,
-            "rmse_RAR_MOND_km_s": SPARC_RAR_MOND_RMSE_KM_S,
-            "rmse_FPM_repaired_km_s": 11.87,
-            "rmse_FPM_gas_boundary_km_s": 11.61,
+            "evidence_status": "ARCHIVED_BENCHMARK_UNREGENERATED",
+            "archived_benchmark_metadata": {
+                "rmse_legacy_single_source_km_s": SPARC_LEGACY_RMSE_KM_S,
+                "rmse_split_source_km_s": SPARC_SPLIT_SOURCE_RMSE_KM_S,
+                "rmse_RAR_MOND_km_s": SPARC_RAR_MOND_RMSE_KM_S,
+                "rmse_FPM_repaired_km_s": 11.87,
+                "rmse_FPM_gas_boundary_km_s": 11.61,
+            },
         }
 
     fpm_rows: List[Tuple[List[float], List[float]]] = []
@@ -2441,6 +2444,19 @@ def experiment_10_galaxy_rotation(d: DerivedConstants) -> Dict[str, Any]:
     environmental_inputs = {"R_d_kpc": 120.0}
     res = bridge_gravity_galaxy(d, r_kpc, R_d=environmental_inputs["R_d_kpc"])
     sparc = audit_sparc_fpm_bridge(d)
+    if not sparc["available"]:
+        return {
+            "name": "Galaxy rotation (SPARC)",
+            "key_metric": "Median RMSE (gas-boundary source functional)",
+            "value": None,
+            "verdict": "ARCHIVED_BENCHMARK_UNAVAILABLE",
+            "evidence_status": sparc["evidence_status"],
+            "reason": sparc["reason"],
+            "archived_benchmark_metadata": sparc["archived_benchmark_metadata"],
+            "ratio_v240_v30": res["ratio_v240_v30"],
+            "environmental_inputs": environmental_inputs,
+            "local_sparc_audit": sparc,
+        }
     rmse_fpm = sparc.get("rmse_FPM_repaired_km_s", 11.87)
     rmse_gas_boundary = sparc.get("rmse_FPM_gas_boundary_km_s", rmse_fpm)
     rmse_RAR_MOND = sparc.get("rmse_RAR_MOND_km_s", SPARC_RAR_MOND_RMSE_KM_S)
@@ -3182,28 +3198,37 @@ def plot_all(d: DerivedConstants, axioms: Axioms,
     axes[0].legend(fontsize=8)
     axes[0].grid(True, alpha=0.3, which="both")
 
-    methods = ["legacy\nsingle-source", "split-source\nstress",
-               "FPM repaired\nx^2 bridge", "gas-boundary\nsource functional",
-               "RAR/MOND\nfixed"]
-    rmse = [
-        sparc.get("rmse_legacy_single_source_km_s", SPARC_LEGACY_RMSE_KM_S),
-        sparc.get("rmse_split_source_km_s", SPARC_SPLIT_SOURCE_RMSE_KM_S),
-        sparc.get("rmse_FPM_repaired_km_s", 11.87),
-        sparc.get("rmse_FPM_gas_boundary_km_s", 11.61),
-        sparc.get("rmse_RAR_MOND_km_s", SPARC_RAR_MOND_RMSE_KM_S),
-    ]
-    colors = ["#a83232", "#a07a1a", "#1a2a4a", "#2a5a8a", "#2d7a4a"]
-    bars = axes[1].barh(methods, rmse, color=colors, alpha=0.86)
-    for bar, val in zip(bars, rmse):
-        axes[1].text(bar.get_width() + 0.35,
-                     bar.get_y() + bar.get_height() / 2,
-                     f"{val:.2f}", va="center", fontsize=8)
-    axes[1].axvline(12.0, color="#2d7a4a", ls=":", lw=1.0)
-    axes[1].set_xlabel("median RMSE [km/s]")
-    title_suffix = "local SPARC audit" if sparc.get("available") else "SPARC audit fallback"
-    axes[1].set_title(f"SPARC R2 comparison\n{title_suffix}")
-    axes[1].grid(True, alpha=0.3, axis="x")
-    axes[1].set_xlim(0, max(26.0, max(rmse) * 1.18))
+    if sparc["available"]:
+        methods = ["legacy\nsingle-source", "split-source\nstress",
+                   "FPM repaired\nx^2 bridge", "gas-boundary\nsource functional",
+                   "RAR/MOND\nfixed"]
+        rmse = [
+            sparc["rmse_legacy_single_source_km_s"],
+            sparc["rmse_split_source_km_s"],
+            sparc["rmse_FPM_repaired_km_s"],
+            sparc["rmse_FPM_gas_boundary_km_s"],
+            sparc["rmse_RAR_MOND_km_s"],
+        ]
+        colors = ["#a83232", "#a07a1a", "#1a2a4a", "#2a5a8a", "#2d7a4a"]
+        bars = axes[1].barh(methods, rmse, color=colors, alpha=0.86)
+        for bar, val in zip(bars, rmse):
+            axes[1].text(bar.get_width() + 0.35,
+                         bar.get_y() + bar.get_height() / 2,
+                         f"{val:.2f}", va="center", fontsize=8)
+        axes[1].axvline(12.0, color="#2d7a4a", ls=":", lw=1.0)
+        axes[1].set_xlabel("median RMSE [km/s]")
+        axes[1].set_title("SPARC R2 comparison\nlocal data audit")
+        axes[1].grid(True, alpha=0.3, axis="x")
+        axes[1].set_xlim(0, max(26.0, max(rmse) * 1.18))
+    else:
+        axes[1].axis("off")
+        axes[1].text(0.5, 0.58, "SPARC empirical audit unavailable", ha="center",
+                     va="center", transform=axes[1].transAxes, fontsize=11,
+                     fontweight="bold", color="#1a2a4a")
+        axes[1].text(0.5, 0.40,
+                     "External tables are absent. Archived RMSE values are\nmetadata, not a current empirical result.",
+                     ha="center", va="center", transform=axes[1].transAxes,
+                     fontsize=8.5, color="#555555")
     p = os.path.join(out_dir, "fpm_galaxy_rotation.png")
     fig.savefig(p, dpi=140)
     plt.close(fig)
@@ -3562,10 +3587,13 @@ def main() -> None:
     print(f"  Gravity:    v(30)={b_grav['v_30_kms']:.2f} km/s, "
           f"v(240)={b_grav['v_240_kms']:.2f} km/s, "
           f"ratio={b_grav['ratio_v240_v30']:.4f}")
-    print(f"  SPARC/RAR:  FPM scalar RMSE={b_sparc['rmse_FPM_repaired_km_s']:.2f} km/s, "
-          f"gas-boundary={b_sparc['rmse_FPM_gas_boundary_km_s']:.2f} km/s, "
-          f"RAR/MOND={b_sparc['rmse_RAR_MOND_km_s']:.2f} km/s, "
-          f"local_data={b_sparc['available']}")
+    if b_sparc["available"]:
+        print(f"  SPARC/RAR:  FPM scalar RMSE={b_sparc['rmse_FPM_repaired_km_s']:.2f} km/s, "
+              f"gas-boundary={b_sparc['rmse_FPM_gas_boundary_km_s']:.2f} km/s, "
+              f"RAR/MOND={b_sparc['rmse_RAR_MOND_km_s']:.2f} km/s, local_data=True")
+    else:
+        print("  SPARC/RAR:  empirical audit unavailable; archived benchmark metadata retained "
+              "without a competitive verdict")
     print(f"  Time dil.:  gamma range = [{b_time['gamma'][0]:.2f}, "
           f"{b_time['gamma'][-1]:.2f}], gamma_max={b_time['gamma_max']:.2f}")
     print(f"  CMB:        A_FPM={b_cmb['A_FPM']:.4e}, "

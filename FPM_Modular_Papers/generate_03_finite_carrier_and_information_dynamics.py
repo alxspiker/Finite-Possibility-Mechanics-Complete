@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Generate Modular Paper 03: Finite Carrier and Information Dynamics."""
 
-from reportlab.platypus import PageBreak
 from _paper_template import PaperSpec, body, build_manuscript, bullet, equation, h1, h2, reference, statement
 
 SPEC=PaperSpec(
@@ -89,7 +88,7 @@ def manuscript(st):
       h1("9. Conclusion",st),
       body("The FPM carrier turns directed possibilities into a finite dynamical object. Route cost changes phase without changing norm; environmental or internal disturbance contracts coherence; resource pressure activates a separate consolidation transaction; erased distinctions enter a thermodynamic ledger; and continuous target weights become exact integer populations with a rigorous error bound. The construction therefore connects coherence and finite information capacity without conflating decoherence, selection, and erasure.",st),
       statement("Carrier summary","Possibility persists as phase-coherent finite state while the energy ledger can maintain it. When it cannot, FPM consolidates explicitly, pays for discarded distinctions, and records the surviving distribution exactly.",st),
-      PageBreak(),h1("References",st),
+      h1("References",st),
       reference("[1] G. Lindblad, “On the Generators of Quantum Dynamical Semigroups,” <i>Communications in Mathematical Physics</i> 48, 119–130 (1976). https://doi.org/10.1007/BF01608499",st),
       reference("[2] R. Landauer, “Irreversibility and Heat Generation in the Computing Process,” <i>IBM Journal of Research and Development</i> 5, 183–191 (1961). https://doi.org/10.1147/rd.53.0183",st),
       reference("[3] M. Born, “Zur Quantenmechanik der Stoßvorgänge,” <i>Zeitschrift für Physik</i> 37, 863–867 (1926). https://doi.org/10.1007/BF01397477",st),

@@ -502,7 +502,7 @@ def chart_galaxy_rotation():
 
     ax.set_xlabel('x = g_bar / a0', fontsize=10)
     ax.set_ylabel('Susceptibility nu(x) = v^2 / v_bar^2', fontsize=10)
-    ax.set_title('A. Zero-Fit Susceptibility Shape\n'
+    ax.set_title('A. Declared Susceptibility Shape\n'
                  'MOND-like envelope from route-cost constants',
                  fontsize=10, color=COL_PRIMARY)
     ax.legend(fontsize=8.5, loc='lower right')
@@ -585,7 +585,7 @@ def chart_galaxy_rotation():
         ax.text(0.5, 0.58, 'SPARC residual panel requires\nlocal_data/Rotmod_LTG',
                 transform=ax.transAxes, ha='center', va='center',
                 fontsize=10, color=COL_PRIMARY, fontweight='bold')
-        ax.text(0.5, 0.40, 'The susceptibility and RMSE summary\nremain zero-fit fallbacks.',
+        ax.text(0.5, 0.40, 'No empirical RMSE is shown without\nthe archived external dataset and rerun.',
                 transform=ax.transAxes, ha='center', va='center',
                 fontsize=8, color=COL_GREY)
 
@@ -623,27 +623,15 @@ def chart_galaxy_rotation():
                     fontsize=7.7, color=COL_PRIMARY, va='center',
                     fontweight='bold' if j == 0 else 'normal')
 
-    # Compact RMSE summary below the table.
-    methods = ['FPM single-\nsource kernel', 'FPM split-\nsource stress',
-               'FPM repaired\nx^2 bridge', 'FPM gas-boundary\nsource functional',
-               'RAR / MOND\n(fixed)']
-    rmse = [23.94, 13.65, 11.87, 11.61, 11.72]
-    colors = [COL_GOLD, COL_BLUE, COL_PRIMARY, '#4778a0', COL_GREEN]
-    inset = ax.inset_axes([0.08, 0.03, 0.86, 0.30])
-    y_pos = np.arange(len(methods))
-    bars = inset.barh(y_pos, rmse, color=colors, alpha=0.85,
-                      edgecolor='black', linewidth=0.5)
-    inset.set_yticks(y_pos)
-    inset.set_yticklabels(methods)
-    for bar, val in zip(bars, rmse):
-        inset.text(bar.get_width() + 0.8, bar.get_y() + bar.get_height() / 2,
-                f'{val:.2f}', va='center', fontsize=7.5, color=COL_PRIMARY,
-                fontweight='bold')
-    inset.axvline(12, color=COL_GREEN, linestyle=':', alpha=0.6, linewidth=1.2)
-    inset.set_xlabel('Median RMSE (km/s)', fontsize=7.5)
-    inset.tick_params(axis='both', labelsize=7.0)
-    inset.grid(True, alpha=0.25, axis='x')
-    inset.set_xlim(0, 27)
+    # No RMSE comparison panel is drawn without the archived SPARC data and a
+    # regenerated selection/parameter ledger. Hard-coded values are metadata,
+    # not a live empirical result.
+    ax.text(0.50, 0.16, 'SPARC RMSE panel intentionally omitted',
+            transform=ax.transAxes, ha='center', fontsize=9,
+            fontweight='bold', color=COL_PRIMARY)
+    ax.text(0.50, 0.08,
+            'The public artifact has no local SPARC tables.\nArchived values are not presented as a current comparison.',
+            transform=ax.transAxes, ha='center', fontsize=7.7, color=COL_GREY)
 
     return save_fig(fig, '05_galaxy_rotation.png')
 

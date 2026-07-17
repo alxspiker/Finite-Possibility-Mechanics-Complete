@@ -82,6 +82,46 @@ def _register_fonts() -> tuple[str, str, str]:
 REGULAR, BOLD, ITALIC = _register_fonts()
 
 
+def _register_math_font() -> str:
+    """Register a Unicode fallback for mathematical glyphs absent from Arial."""
+    candidates = [
+        Path(__file__).resolve().parents[1] / "fonts" / "Arial Unicode.ttf",
+        Path("/System/Library/Fonts/Supplemental/Arial Unicode.ttf"),
+        Path("/Library/Fonts/Arial Unicode.ttf"),
+    ]
+    for path in candidates:
+        if path.exists():
+            try:
+                pdfmetrics.registerFont(TTFont("FPM-Math", str(path)))
+                return "FPM-Math"
+            except Exception:
+                continue
+    return REGULAR
+
+
+MATH = _register_math_font()
+
+
+def _safe_math_markup(text: str) -> str:
+    """Use a Unicode-capable fallback for mathematical entity glyphs.
+
+    The Arial body family used by these manuscripts lacks at least ``&nabla;``
+    and ``&mapsto;``; ReportLab renders both as tofu squares.  Render the full
+    set of mathematical entities used in the series through the Unicode font,
+    so a future equation cannot silently reintroduce the same defect.
+    """
+    entities = (
+        "&Delta;", "&Omega;", "&Sigma;", "&alpha;", "&beta;", "&ell;",
+        "&epsilon;", "&gamma;", "&ge;", "&infin;", "&kappa;", "&larr;",
+        "&le;", "&mapsto;", "&middot;", "&mu;", "&nabla;", "&ne;",
+        "&part;", "&phi;", "&pi;", "&psi;", "&radic;", "&rarr;",
+        "&rho;", "&tau;", "&theta;", "&times;", "&xi;",
+    )
+    for entity in entities:
+        text = text.replace(entity, f'<font name="{MATH}">{entity}</font>')
+    return text
+
+
 def _styles():
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(
@@ -260,7 +300,7 @@ def _cover_story(spec: PaperSpec, styles):
 
 
 def _callout(label: str, text: str, styles):
-    content = Paragraph(f"<b>{label}</b><br/>{text}", styles["Callout"])
+    content = Paragraph(_safe_math_markup(f"<b>{label}</b><br/>{text}"), styles["Callout"])
     table = Table([[content]], colWidths=[PAGE_WIDTH - 44 * mm], hAlign="LEFT")
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), PALE),
@@ -280,23 +320,23 @@ def manuscript_styles():
 
 
 def h1(text: str, styles):
-    return Paragraph(text, styles["ManuscriptH1"])
+    return Paragraph(_safe_math_markup(text), styles["ManuscriptH1"])
 
 
 def h2(text: str, styles):
-    return Paragraph(text, styles["ManuscriptH2"])
+    return Paragraph(_safe_math_markup(text), styles["ManuscriptH2"])
 
 
 def body(text: str, styles):
-    return Paragraph(text, styles["BodyFPM"])
+    return Paragraph(_safe_math_markup(text), styles["BodyFPM"])
 
 
 def equation(text: str, styles):
-    return Paragraph(text, styles["Equation"])
+    return Paragraph(_safe_math_markup(text), styles["Equation"])
 
 
 def bullet(text: str, styles):
-    return Paragraph(f"&bull;&nbsp; {text}", styles["BulletFPM"])
+    return Paragraph(_safe_math_markup(f"&bull;&nbsp; {text}"), styles["BulletFPM"])
 
 
 def statement(label: str, text: str, styles):
@@ -304,7 +344,7 @@ def statement(label: str, text: str, styles):
 
 
 def reference(text: str, styles):
-    return Paragraph(text, styles["Reference"])
+    return Paragraph(_safe_math_markup(text), styles["Reference"])
 
 
 def contents_page(spec: PaperSpec, styles):

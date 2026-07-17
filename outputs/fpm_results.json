@@ -570,11 +570,14 @@
     "sparc_fpm_repaired_gravity": {
       "available": false,
       "reason": "SPARC local data not found. Set FPM_SPARC_DATA_DIR to run the audit.",
-      "rmse_legacy_single_source_km_s": 23.94,
-      "rmse_split_source_km_s": 13.65,
-      "rmse_RAR_MOND_km_s": 11.715622173330429,
-      "rmse_FPM_repaired_km_s": 11.87,
-      "rmse_FPM_gas_boundary_km_s": 11.61
+      "evidence_status": "ARCHIVED_BENCHMARK_UNREGENERATED",
+      "archived_benchmark_metadata": {
+        "rmse_legacy_single_source_km_s": 23.94,
+        "rmse_split_source_km_s": 13.65,
+        "rmse_RAR_MOND_km_s": 11.715622173330429,
+        "rmse_FPM_repaired_km_s": 11.87,
+        "rmse_FPM_gas_boundary_km_s": 11.61
+      }
     },
     "time_dilation": {
       "L_values": [
@@ -16097,15 +16100,17 @@
     {
       "name": "Galaxy rotation (SPARC)",
       "key_metric": "Median RMSE (gas-boundary source functional)",
-      "value": 11.61,
-      "verdict": "ZERO_FIT_COMPETITIVE",
-      "rmse_legacy_single_source_km_s": 23.94,
-      "rmse_split_source_km_s": 13.65,
-      "rmse_FPM_repaired_km_s": 11.87,
-      "rmse_FPM_gas_boundary_km_s": 11.61,
-      "rmse_RAR_MOND_km_s": 11.715622173330429,
-      "FPM_wins_vs_RAR_MOND": null,
-      "FPM_gas_boundary_wins_vs_RAR_MOND": null,
+      "value": null,
+      "verdict": "ARCHIVED_BENCHMARK_UNAVAILABLE",
+      "evidence_status": "ARCHIVED_BENCHMARK_UNREGENERATED",
+      "reason": "SPARC local data not found. Set FPM_SPARC_DATA_DIR to run the audit.",
+      "archived_benchmark_metadata": {
+        "rmse_legacy_single_source_km_s": 23.94,
+        "rmse_split_source_km_s": 13.65,
+        "rmse_RAR_MOND_km_s": 11.715622173330429,
+        "rmse_FPM_repaired_km_s": 11.87,
+        "rmse_FPM_gas_boundary_km_s": 11.61
+      },
       "ratio_v240_v30": 0.6486826422238198,
       "environmental_inputs": {
         "R_d_kpc": 120.0
@@ -16113,11 +16118,14 @@
       "local_sparc_audit": {
         "available": false,
         "reason": "SPARC local data not found. Set FPM_SPARC_DATA_DIR to run the audit.",
-        "rmse_legacy_single_source_km_s": 23.94,
-        "rmse_split_source_km_s": 13.65,
-        "rmse_RAR_MOND_km_s": 11.715622173330429,
-        "rmse_FPM_repaired_km_s": 11.87,
-        "rmse_FPM_gas_boundary_km_s": 11.61
+        "evidence_status": "ARCHIVED_BENCHMARK_UNREGENERATED",
+        "archived_benchmark_metadata": {
+          "rmse_legacy_single_source_km_s": 23.94,
+          "rmse_split_source_km_s": 13.65,
+          "rmse_RAR_MOND_km_s": 11.715622173330429,
+          "rmse_FPM_repaired_km_s": 11.87,
+          "rmse_FPM_gas_boundary_km_s": 11.61
+        }
       }
     },
     {
