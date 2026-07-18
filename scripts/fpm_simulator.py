@@ -4,6 +4,8 @@
 Finite Possibility Mechanics (FPM) -- COMPLETE CLOSED-FORM SIMULATOR
 ====================================================================
 
+Zenodo DOI: https://doi.org/10.5281/zenodo.21420735
+
 A single self-contained Python simulator that:
   * takes the five FPM axioms as the ONLY inputs,
   * re-derives every one of the 22 constants inline (zero fitted parameters),
@@ -63,8 +65,6 @@ import matplotlib.pyplot as plt
 plt.rcParams["font.sans-serif"] = ["DejaVu Sans"]
 plt.rcParams["axes.unicode_minus"] = False
 plt.rcParams["figure.dpi"] = 110
-
-FPM_VERSION = "v6.2"
 
 # Physical constants (CODATA / SI)
 HBAR = 1.054571817e-34       # J*s
@@ -902,7 +902,7 @@ def local_replenishment_kernel(
 def mean_field_replenishment_equilibrium(
     Ls: List[float], weights: np.ndarray
 ) -> np.ndarray:
-    """Frozen-weight equilibrium target retained from the pre-v6.2 global formula."""
+    """Frozen-weight equilibrium target retained from the legacy global formula."""
     costs = np.asarray(Ls, dtype=float)
     weights = np.asarray(weights, dtype=float)
     return float(np.sum(costs)) * weights / float(np.sum(weights))
@@ -1660,7 +1660,6 @@ def audit_born_distribution_bridge(d: DerivedConstants,
 
     return {
         "audit_name": "Born-compatible distribution bridge formal audit",
-        "version": FPM_VERSION,
         "n_states": n_states,
         "n_channels": n_channels,
         "N_bit_eq": d.N_bit_eq,
@@ -1819,7 +1818,6 @@ def audit_joint_torsion_bell_bridge(d: DerivedConstants,
 
     return {
         "audit_name": "Joint torsion Bell/CHSH audit",
-        "version": FPM_VERSION,
         "n_angles": n_angles,
         "angles": angles.tolist(),
         "local_torsion_correlation": local_corr.tolist(),
@@ -1971,7 +1969,6 @@ def audit_zombie_gated_bell_signature(d: DerivedConstants) -> Dict[str, Any]:
 
     return {
         "audit_name": "ZOMBIE-gated Bell signature audit",
-        "version": FPM_VERSION,
         "E_zombie": E_zombie,
         "energy_ratio_grid": grid.tolist(),
         "joint_quality_surface": q_surface.tolist(),
@@ -2562,7 +2559,6 @@ def fine_structure_bare_coupling(d: DerivedConstants) -> Dict[str, Any]:
     rel_diff_macro = abs(one_over_alpha_bare - codata_macro_inv) / codata_macro_inv
     return {
         "audit_name": "Fine-structure bare coupling (Torsion Snap)",
-        "version": FPM_VERSION,
         "mechanism": (
             "Pure-gauge torsion is zero-cost and non-local. Electromagnetism is "
             "the paid snap when symmetric strain exceeds c0. Transverse photons "
@@ -3497,7 +3493,7 @@ def to_serialisable(obj: Any) -> Any:
 
 def main() -> None:
     print("=" * 70)
-    print(f"FINITE POSSIBILITY MECHANICS (FPM) {FPM_VERSION} -- COMPLETE SIMULATOR")
+    print("FINITE POSSIBILITY MECHANICS (FPM) -- COMPLETE SIMULATOR")
     print("=" * 70)
     print()
     print("Layer 0: Loading the five axioms...")
@@ -3697,7 +3693,6 @@ def main() -> None:
     )
     results = {
         "metadata": {
-            "version": FPM_VERSION,
             "Validation_Suite": validation_suite,
         },
         "axioms": to_serialisable(axioms),
@@ -3779,9 +3774,10 @@ def main() -> None:
     out_json = os.path.join(OUTPUT_DIR, "fpm_results.json")
     with open(out_json, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, default=to_serialisable)
+        f.write("\n")
     print(f"Results JSON saved to: {out_json}")
     print()
-    print(f"FPM {FPM_VERSION} simulation complete.")
+    print("FPM simulation complete.")
     print("Master chain equation (every arrow is derived, none postulated):")
     print("  substrate R_ij -> (S_9, K_1) -> Phi_Omega -> psi_t -> p_t=|psi_t|^2")
     print("    -> ZOMBIE microcell quantization when starvation forces exchangeability")

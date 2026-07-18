@@ -1,6 +1,5 @@
 {
   "metadata": {
-    "version": "v6.2",
     "Validation_Suite": "16 primary experiments plus 1 starvation subtest (8b)"
   },
   "axioms": {
@@ -797,7 +796,6 @@
     },
     "joint_torsion_bell_chsh": {
       "audit_name": "Joint torsion Bell/CHSH audit",
-      "version": "v6.2",
       "n_angles": 181,
       "angles": [
         0.0,
@@ -1731,7 +1729,6 @@
     },
     "zombie_gated_bell_signature": {
       "audit_name": "ZOMBIE-gated Bell signature audit",
-      "version": "v6.2",
       "E_zombie": 0.13333333333333333,
       "energy_ratio_grid": [
         0.05,
@@ -15909,7 +15906,6 @@
     },
     "fine_structure_bare_coupling": {
       "audit_name": "Fine-structure bare coupling (Torsion Snap)",
-      "version": "v6.2",
       "mechanism": "Pure-gauge torsion is zero-cost and non-local. Electromagnetism is the paid snap when symmetric strain exceeds c0. Transverse photons are traceless (K1 = 0), so the maximum symmetric capacity is C_sym_max = (1/e_floor)^(1/beta).",
       "K1_locked": 0.0,
       "e_floor": 0.0314,
@@ -16146,7 +16142,6 @@
       "verdict": "PASS",
       "audit": {
         "audit_name": "Born-compatible distribution bridge formal audit",
-        "version": "v6.2",
         "n_states": 1000,
         "n_channels": 9,
         "N_bit_eq": 1452997909,
@@ -16170,7 +16165,6 @@
       "verdict": "PASS",
       "audit": {
         "audit_name": "Joint torsion Bell/CHSH audit",
-        "version": "v6.2",
         "n_angles": 181,
         "angles": [
           0.0,
@@ -17124,7 +17118,6 @@
       "relative_difference_from_macro": 0.0017612840934255504,
       "audit": {
         "audit_name": "Fine-structure bare coupling (Torsion Snap)",
-        "version": "v6.2",
         "mechanism": "Pure-gauge torsion is zero-cost and non-local. Electromagnetism is the paid snap when symmetric strain exceeds c0. Transverse photons are traceless (K1 = 0), so the maximum symmetric capacity is C_sym_max = (1/e_floor)^(1/beta).",
         "K1_locked": 0.0,
         "e_floor": 0.0314,

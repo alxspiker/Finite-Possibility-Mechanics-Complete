@@ -38,6 +38,8 @@ def manuscript(styles):
         body("This paper specifies the public Python reference implementation of Finite Possibility Mechanics. The runtime executes the FPM master chain on a periodic 5&times;5&times;5 cubic lattice: 125 nodes, six nearest neighbours per node, and 400 ordered ticks in the standard production audit. Each node carries stored energy, a directed 3&times;3 route ledger, a nine-channel complex carrier, viscosity, prior, cache bias, and derived observables. Ordinary action is replenished through the local reversible kernel proved in Paper 1; capacity overflow, starvation, Landauer debit, and explicit torsion-link operations are recorded in separate signed accounts.", styles),
         body("The implementation reproduces the exact algebraic identities to floating-point precision. The local bridge audit reports row-stochastic error 1.11&times;10<sup>-16</sup>, detailed-balance error 2.78&times;10<sup>-17</sup>, nodewise continuity residual 6.94&times;10<sup>-17</sup>, exact local energy edge-flux antisymmetry, and equilibrium L1 error 7.28&times;10<sup>-14</sup>. The 400-tick master run closes the expanded ledger to 6.40&times;10<sup>-14</sup> while exercising capacity routing, starvation, information erasure, finite microcell quantization, and linked torsion quantization. These results establish a reproducible executable specification whose numerical residuals are many orders below the modeled action scales.", styles),
         statement("Computational result", "The public runtime implements the finite periodic cubic geometry and local replenishment theorem directly. Its residuals are implementation checks of the stated equations; they are not unrecorded energy channels or independent physical evidence.", styles),
+        Spacer(1, 4 * mm),
+        body("<b>Record DOI:</b> <a href='https://doi.org/10.5281/zenodo.21420643'>https://doi.org/10.5281/zenodo.21420643</a>", styles),
     ]
     s += [
         h1("1. Executable specification", styles),
@@ -87,7 +89,7 @@ def manuscript(styles):
     s += [
         h1("4. Numerical realization", styles),
         h2("4.1 Why the reference uses floating point", styles),
-        body("The Python implementation uses IEEE-754 double precision [3] and NumPy complex arrays because it is the clearest representation of the equations. It preserves direct correspondence between source expressions and the manuscript, supports singular-value decomposition and phase rotation naturally, and makes sensitivity analysis inexpensive. This is a reference semantics, not a claim that physical state is binary floating-point data.", styles),
+        body("The Python implementation uses IEEE-754 double precision [5] and NumPy complex arrays because it is the clearest representation of the equations. It preserves direct correspondence between source expressions and the manuscript, supports singular-value decomposition and phase rotation naturally, and makes sensitivity analysis inexpensive. This is a reference semantics, not a claim that physical state is binary floating-point data.", styles),
         body("Tensorless is not assumed to be this runtime with floating point replaced by integers. Its synchronous sandbox receives caller-translated action and payload values, resolves contention with exact integer policies, and currently replenishes through a global proportional allocator. That allocator realizes an equilibrium-style activity weighting, not the ordinary one-tick local kernel r=P<super>T</super>L used here. Tensorless also reports aggregate exhaust and starvation counters rather than this runtime's site-resolved event history. Paper 4 specifies those differences and limits cross-runtime comparisons to explicitly shared contracts.", styles),
         h2("4.2 Residual interpretation", styles),
         body("An algebraic identity that is exact over real numbers may leave a residual near 10<sup>-16</sup> after a sequence of floating-point additions and multiplications. The correct test is scale-aware: compare the residual with machine precision and the magnitude of the summed quantities, then verify convergence or exact agreement in an integer realization. The reference audit records residuals instead of rounding them to zero in the output.", styles),
@@ -166,10 +168,12 @@ def manuscript(styles):
         statement("Executable summary", "The public runtime is not a diagram of the theory. It is the theory's finite local update chain, executed on 125 six-neighbour nodes and audited transaction by transaction.", styles),
         PageBreak(),
         h1("References", styles),
-        reference("[1] A. Spiker, <i>Finite-Possibility-Mechanics-Complete</i>, source repository and reproducible runtime. https://github.com/alxspiker/Finite-Possibility-Mechanics-Complete", styles),
-        reference("[2] A. Spiker, <i>FPM Foundations: Finite Local Substrates, Directed Route Ledgers, and Exact Closure</i>, Modular Paper 01.", styles),
-        reference("[3] IEEE Computer Society, <i>IEEE Standard for Floating-Point Arithmetic</i>, IEEE 754-2019. https://doi.org/10.1109/IEEESTD.2019.8766229", styles),
-        reference("[4] N. Metropolis et al., “Equation of State Calculations by Fast Computing Machines,” <i>Journal of Chemical Physics</i> 21, 1087–1092 (1953). https://doi.org/10.1063/1.1699114", styles),
+        reference("[1] A. Spiker, <i>Finite-Possibility-Mechanics-Complete</i>, source repository and reproducible runtime. <a href='https://github.com/alxspiker/Finite-Possibility-Mechanics-Complete'>https://github.com/alxspiker/Finite-Possibility-Mechanics-Complete</a>", styles),
+        reference("[2] A. Spiker, <i>FPM Foundations: Finite Local Substrates, Directed Route Ledgers, and Exact Closure</i>, Modular Paper 01, Zenodo (2026). <a href='https://doi.org/10.5281/zenodo.21420508'>https://doi.org/10.5281/zenodo.21420508</a>", styles),
+        reference("[3] A. Spiker, <i>Finite Possibility Mechanics: A Unified Information-Theoretic Framework</i>, Zenodo (2026). <a href='https://doi.org/10.5281/zenodo.21352386'>https://doi.org/10.5281/zenodo.21352386</a>", styles),
+        reference("[4] A. Spiker, <i>FPM Reference Python Simulator and Audit Results</i>, Zenodo (2026). <a href='https://doi.org/10.5281/zenodo.21420735'>https://doi.org/10.5281/zenodo.21420735</a>", styles),
+        reference("[5] IEEE Computer Society, <i>IEEE Standard for Floating-Point Arithmetic</i>, IEEE 754-2019. <a href='https://doi.org/10.1109/IEEESTD.2019.8766229'>https://doi.org/10.1109/IEEESTD.2019.8766229</a>", styles),
+        reference("[6] N. Metropolis et al., “Equation of State Calculations by Fast Computing Machines,” <i>Journal of Chemical Physics</i> 21, 1087–1092 (1953). <a href='https://doi.org/10.1063/1.1699114'>https://doi.org/10.1063/1.1699114</a>", styles),
     ]
     return s
 

@@ -90,6 +90,7 @@ def manuscript(styles):
             styles,
         ),
         Spacer(1, 4 * mm),
+        body("<b>Record DOI:</b> <a href='https://doi.org/10.5281/zenodo.21420508'>https://doi.org/10.5281/zenodo.21420508</a>", styles),
         body("<b>Keywords:</b> finite information dynamics; directed routing; local conservation; Markov transport; discrete continuity; finite causal cone; exact ledger", styles),
     ]
 
@@ -553,12 +554,13 @@ def manuscript(styles):
     s += [
         PageBreak(),
         h1("References", styles),
-        reference("[1] N. Metropolis, A. W. Rosenbluth, M. N. Rosenbluth, A. H. Teller, and E. Teller, “Equation of State Calculations by Fast Computing Machines,” <i>Journal of Chemical Physics</i> 21, 1087–1092 (1953). https://doi.org/10.1063/1.1699114", styles),
-        reference("[2] W. K. Hastings, “Monte Carlo Sampling Methods Using Markov Chains and Their Applications,” <i>Biometrika</i> 57, 97–109 (1970). https://doi.org/10.1093/biomet/57.1.97", styles),
-        reference("[3] T. Barth, R. Herbin, and M. Ohlberger, “Finite Volume Methods: Foundation and Analysis,” in <i>Encyclopedia of Computational Mechanics, Second Edition</i> (2017). https://doi.org/10.1002/9781119176817.ecm2010", styles),
-        reference("[4] M. Desbrun, E. Kanso, and Y. Tong, “Discrete Differential Forms for Computational Modeling,” <i>ACM SIGGRAPH 2006 Courses</i> (2006). https://doi.org/10.1145/1185657.1185665", styles),
-        reference("[5] A. Spiker, <i>Finite Possibility Mechanics: A Unified Information-Theoretic Framework</i>, Zenodo (2026). https://doi.org/10.5281/zenodo.21352386", styles),
-        reference("[6] A. Spiker, <i>Finite-Possibility-Mechanics-Complete</i>, reproducible source repository. https://github.com/alxspiker/Finite-Possibility-Mechanics-Complete", styles),
+        reference("[1] N. Metropolis, A. W. Rosenbluth, M. N. Rosenbluth, A. H. Teller, and E. Teller, “Equation of State Calculations by Fast Computing Machines,” <i>Journal of Chemical Physics</i> 21, 1087–1092 (1953). <a href='https://doi.org/10.1063/1.1699114'>https://doi.org/10.1063/1.1699114</a>", styles),
+        reference("[2] W. K. Hastings, “Monte Carlo Sampling Methods Using Markov Chains and Their Applications,” <i>Biometrika</i> 57, 97–109 (1970). <a href='https://doi.org/10.1093/biomet/57.1.97'>https://doi.org/10.1093/biomet/57.1.97</a>", styles),
+        reference("[3] T. Barth, R. Herbin, and M. Ohlberger, “Finite Volume Methods: Foundation and Analysis,” in <i>Encyclopedia of Computational Mechanics, Second Edition</i> (2017). <a href='https://doi.org/10.1002/9781119176817.ecm2010'>https://doi.org/10.1002/9781119176817.ecm2010</a>", styles),
+        reference("[4] M. Desbrun, E. Kanso, and Y. Tong, “Discrete Differential Forms for Computational Modeling,” <i>ACM SIGGRAPH 2006 Courses</i> (2006). <a href='https://doi.org/10.1145/1185657.1185665'>https://doi.org/10.1145/1185657.1185665</a>", styles),
+        reference("[5] A. Spiker, <i>Finite Possibility Mechanics: A Unified Information-Theoretic Framework</i>, Zenodo (2026). <a href='https://doi.org/10.5281/zenodo.21352386'>https://doi.org/10.5281/zenodo.21352386</a>", styles),
+        reference("[6] A. Spiker, <i>Finite-Possibility-Mechanics-Complete</i>, reproducible source repository. <a href='https://github.com/alxspiker/Finite-Possibility-Mechanics-Complete'>https://github.com/alxspiker/Finite-Possibility-Mechanics-Complete</a>", styles),
+        reference("[7] A. Spiker, <i>FPM Reference Python Simulator and Audit Results</i>, Zenodo (2026). <a href='https://doi.org/10.5281/zenodo.21420735'>https://doi.org/10.5281/zenodo.21420735</a>", styles),
     ]
     return s
 
