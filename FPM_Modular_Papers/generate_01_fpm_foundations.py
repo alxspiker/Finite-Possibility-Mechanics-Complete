@@ -3,7 +3,7 @@
 
 from reportlab.lib import colors
 from reportlab.lib.units import mm
-from reportlab.platypus import PageBreak, Spacer, Table, TableStyle
+from reportlab.platypus import KeepTogether, PageBreak, Paragraph, Spacer, Table, TableStyle
 
 from _paper_template import (
     GOLD,
@@ -49,7 +49,29 @@ SPEC = PaperSpec(
 
 
 def table(rows, widths, styles, header=True):
-    t = Table(rows, colWidths=widths, repeatRows=1 if header else 0, hAlign="LEFT")
+    body_style = styles["BodyFPM"].clone("TableBodyFPM")
+    body_style.fontSize = 8.5
+    body_style.leading = 10.6
+    body_style.spaceBefore = 0
+    body_style.spaceAfter = 0
+    body_style.textColor = INK
+
+    header_style = styles["ManuscriptH2"].clone("TableHeaderFPM")
+    header_style.fontSize = 8.5
+    header_style.leading = 10.6
+    header_style.spaceBefore = 0
+    header_style.spaceAfter = 0
+    header_style.textColor = colors.white
+
+    wrapped_rows = []
+    for row_index, row in enumerate(rows):
+        cell_style = header_style if header and row_index == 0 else body_style
+        wrapped_rows.append([
+            Paragraph(cell, cell_style) if isinstance(cell, str) else cell
+            for cell in row
+        ])
+
+    t = Table(wrapped_rows, colWidths=widths, repeatRows=1 if header else 0, hAlign="LEFT")
     commands = [
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#C9D3DE")),
@@ -503,23 +525,25 @@ def manuscript(styles):
     ]
 
     s += [
-        h1("10. Dependency structure", styles),
-        body(
-            "The modular series is organized so that later claims expose their dependence on the foundation. The following table is the formal hand-off from this paper.",
-            styles,
-        ),
-        table([
-            ["Object or result", "Status here", "Primary downstream use"],
-            ["Finite periodic cubic substrate", "Axiom A1", "Executable reference and exact-ledger realization"],
-            ["Positive bounded route cost", "Axiom A2", "Action floor, consolidation, and lag constructions"],
-            ["Expanded signed accounting", "Axiom A3 + Theorem 8", "Starvation, erasure, exhaust, and structural ledgers"],
-            ["Ordered one-edge ticks", "Axiom A4 + Theorems 6 and 10", "Carrier evolution and physical propagation map"],
-            ["Speed calibration", "Axiom A5", "Physical length and time scales"],
-            ["Nine-entry directed route ledger", "Definition + Propositions 1–3", "Carrier channels, mobility, torsion, and bridge sources"],
-            ["Mobility and viscosity", "Constitutive C1 + Proposition 4", "Executable dynamics and bridge response"],
-            ["Local kernel", "Constitutive C2 + Theorems 1–7", "Exact replenishment, equilibrium, and causality"],
-            ["Exact-cochain boundary closure", "Structural restriction + Theorem 11", "Structural-link and torsion bridge"],
-        ], [51 * mm, 43 * mm, 60 * mm], styles),
+        KeepTogether([
+            h1("10. Dependency structure", styles),
+            body(
+                "The modular series is organized so that later claims expose their dependence on the foundation. The following table is the formal hand-off from this paper.",
+                styles,
+            ),
+            table([
+                ["Object or result", "Status here", "Primary downstream use"],
+                ["Finite periodic cubic substrate", "Axiom A1", "Executable reference and exact-ledger realization"],
+                ["Positive bounded route cost", "Axiom A2", "Action floor, consolidation, and lag constructions"],
+                ["Expanded signed accounting", "Axiom A3 + Theorem 8", "Starvation, erasure, exhaust, and structural ledgers"],
+                ["Ordered one-edge ticks", "Axiom A4 + Theorems 6 and 10", "Carrier evolution and physical propagation map"],
+                ["Speed calibration", "Axiom A5", "Physical length and time scales"],
+                ["Nine-entry directed route ledger", "Definition + Propositions 1-3", "Carrier channels, mobility, torsion, and bridge sources"],
+                ["Mobility and viscosity", "Constitutive C1 + Proposition 4", "Executable dynamics and bridge response"],
+                ["Local kernel", "Constitutive C2 + Theorems 1-7", "Exact replenishment, equilibrium, and causality"],
+                ["Exact-cochain boundary closure", "Structural restriction + Theorem 11", "Structural-link and torsion bridge"],
+            ], [48 * mm, 50 * mm, 56 * mm], styles),
+        ]),
         h2("10.1 Results that do not depend on physical calibration", styles),
         bullet("Kernel stochasticity and detailed balance", styles),
         bullet("Global, nodewise, and regional conservation", styles),
