@@ -173,11 +173,18 @@ def build() -> Path:
         Spacer(1, 17 * mm),
         Paragraph("Abstract", st["heading"]),
         Paragraph(
-            "This record is the citation and relationship index for the modular Finite Possibility Mechanics (FPM) research series. "
-            "The six papers separate the mathematical foundation, executable reference, information dynamics, exact-ledger sandbox, "
-            "phenomenological correspondences, and empirical tests into independently citable works. The public Python simulator and "
-            "machine-readable audit results reproduce the computations used by Papers 01, 02, and 04. Every listed modular work is "
-            "derived from the earlier unified monolith; derivation identifies provenance and does not replace the individual records.",
+            "Finite Possibility Mechanics (FPM) is a finite-resource mechanics of directed alternatives, formulated on a finite periodic "
+            "cubic lattice. Each site carries bounded energy, a directed 3x3 route-cost ledger, a normalized nine-channel complex carrier, "
+            "and local auxiliary state. Ordinary per-tick action is redistributed through a nearest-neighbour reversible Markov kernel and "
+            "recorded in a signed ledger, yielding exact finite-graph results for local and global conservation, nodewise and regional "
+            "continuity, finite propagation, equilibrium transport, and finite work capacity. The modular series separates this programme "
+            "into six independently citable layers: foundations; executable reference semantics; carrier and information dynamics; a "
+            "deterministic exact-integer sandbox; phenomenological bridges to quantum, thermodynamic, gravitational, cosmological, and "
+            "electromagnetic observables; and an empirical audit and falsification protocol. A public Python simulator and machine-readable "
+            "output reproduce the computational checks associated with Papers 01, 02, and 04. The formal and computational results establish "
+            "properties of the stated model; bridge correspondences, calibrations, and retrospective comparisons are hypotheses and audits "
+            "rather than independent evidence of physical validity. The series therefore presents both a reproducible construction and "
+            "explicit empirical failure conditions.",
             st["body"],
         ),
         Paragraph("DOI map", st["heading"]),
