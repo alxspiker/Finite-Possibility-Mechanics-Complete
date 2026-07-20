@@ -10,7 +10,8 @@ A single self-contained Python simulator that:
   * takes the five FPM axioms plus explicitly labelled candidate extensions,
   * re-derives every one of the 22 constants inline (zero fitted parameters),
   * runs the per-tick master chain on a Z^3 lattice of daemons,
-  * runs all 16 numerical validation experiments (incl. N_bit_eq, Born, Bell, fine-structure, and runtime torsion audits),
+  * runs 18 primary numerical validation experiments plus one starvation subtest
+    (including N_bit_eq, Born, Bell, fine-structure, and runtime torsion audits),
   * builds the eight physical bridges (Lindblad / Landauer / Gravity /
     Time-dilation / CMB / Born-compatible distribution / Bell-CHSH / Fine-structure), and
   * emits all emergent observables as JSON + PNG plots.
@@ -3030,6 +3031,251 @@ def experiment_17_homogeneous_replenishment_spectrum(d: DerivedConstants) -> Dic
     }
 
 
+def route_temperature_canonicality(
+    route_costs: Sequence[float],
+    activity: Sequence[float],
+    kernel: np.ndarray,
+    neighbours: List[List[int]],
+    *,
+    tolerance: float = 1e-10,
+    witness_pairs: Optional[Sequence[Tuple[int, int]]] = None,
+) -> Dict[str, Any]:
+    """Test whether one scalar is canonically conjugate to route cost.
+
+    On a connected undirected active graph, for every edge set d_ij=L_j-L_i and
+    g_ij=log(P_ij/P_ji).  A scalar canonical relation requires
+    g_ij=-beta_L d_ij on every edge.  Detailed balance separately fixes
+    g_ij=log(w_j/w_i), but does not itself imply a relation to L.
+
+    The least-squares fit is deliberately unweighted: it tests the stated
+    edge relation itself, rather than a conductance-weighted surrogate.
+    """
+    costs = np.asarray(route_costs, dtype=float)
+    weights = np.asarray(activity, dtype=float)
+    if costs.ndim != 1 or weights.shape != costs.shape:
+        raise ValueError("route costs and activity weights must be equal-length vectors")
+    if kernel.shape != (len(costs), len(costs)) or len(neighbours) != len(costs):
+        raise ValueError("kernel and neighbour map must match route-cost length")
+    if np.any(weights <= 0.0):
+        raise ValueError("canonicality audit requires strictly positive activity weights")
+
+    edges: List[Tuple[int, int]] = []
+    d_values: List[float] = []
+    g_values: List[float] = []
+    potential_residuals: List[float] = []
+    detailed_balance_flux_residuals: List[float] = []
+    for i, adjacent in enumerate(neighbours):
+        for j in adjacent:
+            if i >= j:
+                continue
+            if kernel[i, j] <= 0.0 or kernel[j, i] <= 0.0:
+                raise ValueError("canonicality audit requires positive two-way active edges")
+            edges.append((i, j))
+            d_values.append(float(costs[j] - costs[i]))
+            g = float(math.log(kernel[i, j] / kernel[j, i]))
+            g_values.append(g)
+            potential_residuals.append(g - float(math.log(weights[j] / weights[i])))
+            detailed_balance_flux_residuals.append(
+                float(weights[i] * kernel[i, j] - weights[j] * kernel[j, i])
+            )
+
+    active_adjacency = [[] for _ in costs]
+    for i, j in edges:
+        active_adjacency[i].append(j)
+        active_adjacency[j].append(i)
+    reached = {0}
+    frontier = [0]
+    while frontier:
+        i = frontier.pop()
+        for j in active_adjacency[i]:
+            if j not in reached:
+                reached.add(j)
+                frontier.append(j)
+    if len(reached) != len(costs):
+        raise ValueError("canonicality audit requires a connected active graph")
+
+    d = np.asarray(d_values)
+    g = np.asarray(g_values)
+    d_norm_sq = float(d @ d)
+    g_norm_sq = float(g @ g)
+    activity_potential_log_ratio_residual = float(np.max(np.abs(potential_residuals)))
+    detailed_balance_flux_residual = float(np.max(np.abs(detailed_balance_flux_residuals)))
+    result: Dict[str, Any] = {
+        "edge_count": len(edges),
+        "active_graph_connected": True,
+        "criterion": "g_ij=log(P_ij/P_ji)=-beta_L(L_j-L_i)",
+        "edge_relation_from_detailed_balance": "g_ij=log(w_j/w_i)",
+        "detailed_balance_flux_max_residual": detailed_balance_flux_residual,
+        "activity_potential_log_ratio_max_residual": activity_potential_log_ratio_residual,
+        "route_cost_variation_norm_sq": d_norm_sq,
+        "activity_potential_variation_norm_sq": g_norm_sq,
+        "tolerance": tolerance,
+    }
+    if d_norm_sq <= tolerance ** 2:
+        if g_norm_sq <= tolerance ** 2:
+            result.update({
+                "status": "UNIDENTIFIABLE_CONSTANT_ROUTE_COST_UNIFORM_ACTIVITY",
+                "beta_hat": None,
+                "normalized_residual": None,
+                "maximum_edge_residual": 0.0,
+            })
+        else:
+            result.update({
+                "status": "NO_SCALAR_ROUTE_TEMPERATURE_CONSTANT_COST_NONUNIFORM_ACTIVITY",
+                "beta_hat": None,
+                "normalized_residual": None,
+                "maximum_edge_residual": float(np.max(np.abs(g))),
+            })
+        return result
+
+    beta_hat = -float(d @ g) / d_norm_sq
+    edge_residual = g + beta_hat * d
+    normalized_residual = (
+        float(np.linalg.norm(edge_residual) / np.linalg.norm(g))
+        if g_norm_sq > tolerance ** 2 else 0.0
+    )
+    max_edge_residual = float(np.max(np.abs(edge_residual)))
+    if normalized_residual <= tolerance:
+        if beta_hat > tolerance:
+            status = "CANONICAL_POSITIVE_BETA"
+        elif beta_hat < -tolerance:
+            status = "CANONICAL_NEGATIVE_BETA_NO_POSITIVE_TEMPERATURE"
+        else:
+            status = "CANONICAL_ZERO_BETA_NO_FINITE_POSITIVE_TEMPERATURE"
+    else:
+        status = "NO_SCALAR_ROUTE_TEMPERATURE"
+    result.update({
+        "status": status,
+        "beta_hat": beta_hat,
+        "normalized_residual": normalized_residual,
+        "maximum_edge_residual": max_edge_residual,
+        "correlation_d_g": float(np.corrcoef(d, g)[0, 1]) if g_norm_sq > tolerance ** 2 else None,
+    })
+
+    pairs = list(witness_pairs or [])
+    witnesses = []
+    for pair in pairs:
+        try:
+            index = edges.index(tuple(pair))
+        except ValueError as exc:
+            raise ValueError(f"witness edge {pair} is not an undirected active edge") from exc
+        witnesses.append({
+            "edge": tuple(pair),
+            "delta_L": float(d[index]),
+            "log_kernel_ratio": float(g[index]),
+            "edgewise_beta": float(-g[index] / d[index]) if abs(d[index]) > tolerance else None,
+        })
+    if len(witnesses) >= 2:
+        w0, w1 = witnesses[:2]
+        result["two_edge_collinearity_determinant"] = (
+            w0["log_kernel_ratio"] * w1["delta_L"]
+            - w1["log_kernel_ratio"] * w0["delta_L"]
+        )
+    result["witness_edges"] = witnesses
+    return result
+
+
+def declared_route_temperature_audit(d: DerivedConstants) -> Dict[str, Any]:
+    """Audit the first master-chain action state using shared initialization."""
+    daemons, neighbours, _, _ = initialise_master_chain_state(d, lattice_side=5, seed=17)
+    mean_field_truth_target(daemons, neighbours)
+    cfg = LagrangianConfig()
+    route_costs = []
+    for daemon in daemons:
+        omega_new, _, _ = viscosity_update(daemon, d, B_load=0.0)
+        action, _ = axcore_lagrangian(daemon, d, omega_new, cfg)
+        route_costs.append(action)
+    weights = activity_weights(daemons)
+    kernel = local_replenishment_kernel(
+        weights,
+        np.asarray([daemon.Omega_prev for daemon in daemons]),
+        neighbours,
+    )
+    audit = route_temperature_canonicality(
+        route_costs, weights, kernel, neighbours, witness_pairs=[(5, 9), (67, 72)]
+    )
+    audit.update({
+        "state_definition": "FIRST_MASTER_CHAIN_ACTION_STATE_AFTER_TICK_ZERO_TRUTH_TARGET_BEFORE_REPLENISHMENT",
+        "lattice_side": 5,
+        "seed": 17,
+        "route_cost_min": float(np.min(route_costs)),
+        "route_cost_max": float(np.max(route_costs)),
+    })
+    return audit
+
+
+def canonicality_controls() -> Dict[str, Dict[str, Any]]:
+    """Deterministic positive, negative, and degenerate controls for T8."""
+    side = 3
+    n = side ** 3
+    neighbours = periodic_cubic_neighbour_map(side)
+    costs = np.linspace(0.0, 1.0, n)
+    viscosity = np.full(n, 0.65)
+    beta = 0.7
+    positive_weights = np.exp(-beta * costs)
+    positive_kernel = local_replenishment_kernel(positive_weights, viscosity, neighbours)
+    positive = route_temperature_canonicality(costs, positive_weights, positive_kernel, neighbours)
+
+    perturbed_weights = positive_weights.copy()
+    perturbed_weights[0] *= 1.05
+    perturbed_kernel = local_replenishment_kernel(perturbed_weights, viscosity, neighbours)
+    negative = route_temperature_canonicality(costs, perturbed_weights, perturbed_kernel, neighbours)
+
+    constant_costs = np.ones(n)
+    uniform_weights = np.ones(n)
+    uniform_kernel = local_replenishment_kernel(uniform_weights, viscosity, neighbours)
+    constant_uniform = route_temperature_canonicality(
+        constant_costs, uniform_weights, uniform_kernel, neighbours
+    )
+    nonuniform_weights = np.exp(-0.3 * np.linspace(0.0, 1.0, n))
+    nonuniform_kernel = local_replenishment_kernel(nonuniform_weights, viscosity, neighbours)
+    constant_nonuniform = route_temperature_canonicality(
+        constant_costs, nonuniform_weights, nonuniform_kernel, neighbours
+    )
+    return {
+        "positive_canonical_control": positive,
+        "one_weight_perturbation_negative_control": negative,
+        "constant_cost_uniform_activity_control": constant_uniform,
+        "constant_cost_nonuniform_activity_control": constant_nonuniform,
+    }
+
+
+def theorem8_route_temperature_canonicality(d: DerivedConstants) -> Dict[str, Any]:
+    """T8: detailed balance does not imply a route-cost temperature law."""
+    declared = declared_route_temperature_audit(d)
+    controls = canonicality_controls()
+    passed = (
+        declared["status"] == "NO_SCALAR_ROUTE_TEMPERATURE"
+        and controls["positive_canonical_control"]["status"] == "CANONICAL_POSITIVE_BETA"
+        and controls["one_weight_perturbation_negative_control"]["status"] == "NO_SCALAR_ROUTE_TEMPERATURE"
+        and controls["constant_cost_uniform_activity_control"]["status"]
+        == "UNIDENTIFIABLE_CONSTANT_ROUTE_COST_UNIFORM_ACTIVITY"
+        and controls["constant_cost_nonuniform_activity_control"]["status"]
+        == "NO_SCALAR_ROUTE_TEMPERATURE_CONSTANT_COST_NONUNIFORM_ACTIVITY"
+    )
+    return {
+        "theorem_name": "Route-cost canonicality boundary",
+        "scope": "FROZEN_DECLARED_STATE_AND_EXPLICIT_EDGE_CRITERION_ONLY",
+        "statement": "Detailed balance derives the activity potential -log(w_i), not a Boltzmann relation between that potential and route cost L_i.",
+        "declared_state": declared,
+        "controls": controls,
+        "verdict": "PASS" if passed else "FAIL",
+    }
+
+
+def experiment_18_route_temperature_canonicality(d: DerivedConstants) -> Dict[str, Any]:
+    """Audit the declared state for a scalar route-cost canonical temperature."""
+    result = theorem8_route_temperature_canonicality(d)
+    declared = result["declared_state"]
+    return {
+        "name": "Route-temperature canonicality boundary",
+        "key_metric": "normalized scalar-canonicality residual",
+        "value": declared["normalized_residual"],
+        "verdict": result["verdict"],
+        "details": result,
+    }
+
+
 def run_all_experiments(d: DerivedConstants) -> List[Dict[str, Any]]:
     return [
         experiment_01_dispersion_contraction(d),
@@ -3050,6 +3296,7 @@ def run_all_experiments(d: DerivedConstants) -> List[Dict[str, Any]]:
         experiment_15_fine_structure_bare_coupling(d),
         experiment_16_local_replenishment_bridge(d),
         experiment_17_homogeneous_replenishment_spectrum(d),
+        experiment_18_route_temperature_canonicality(d),
     ]
 
 
@@ -3156,19 +3403,10 @@ def joint_quantize_torsion_pair(dm_a: DaemonState,
     return q
 
 
-def run_master_chain(d: DerivedConstants,
-                     lattice_side: int = 5,
-                     n_ticks: int = 400,
-                     seed: int = 17,
-                     baryonic_load: float = 0.0) -> MasterChainTrajectory:
-    """Run the full FPM master chain on a finite periodic cubic lattice.
-
-    The daemons start in the safe interior of [0, E_max] with Omega_prev set
-    to the typical operating viscosity, so the first-tick smoothness term is
-    not artificially large. Perturbations are kept small enough that the
-    closed-universe conservation theorem (sum r = sum L) holds without
-    significant clip events.
-    """
+def initialise_master_chain_state(
+    d: DerivedConstants, lattice_side: int = 5, seed: int = 17
+) -> Tuple[List[DaemonState], List[List[int]], List[Tuple[int, int]], np.random.Generator]:
+    """Construct the deterministic state used immediately before tick zero."""
     if lattice_side < 3:
         raise ValueError("lattice_side must be at least 3")
     n_daemons = lattice_side ** 3
@@ -3195,6 +3433,57 @@ def run_master_chain(d: DerivedConstants,
         )
         daemons.append(dm)
     torsion_links = initialise_torsion_links(daemons)
+    return daemons, neighbours, torsion_links, rng
+
+
+def legacy_master_chain_state(
+    d: DerivedConstants, lattice_side: int = 5, seed: int = 17
+) -> Tuple[List[DaemonState], List[List[int]], List[Tuple[int, int]], np.random.Generator]:
+    """Pre-refactor constructor retained solely for the initialization audit."""
+    if lattice_side < 3:
+        raise ValueError("lattice_side must be at least 3")
+    n_daemons = lattice_side ** 3
+    neighbours = periodic_cubic_neighbour_map(lattice_side)
+    rng = np.random.default_rng(seed)
+    e_t_op = 0.75
+    kappa_op = e_t_op ** 0.25
+    omega_op = d.Omega_max - (d.Omega_max - d.Omega_min) * kappa_op
+    R_shared = np.eye(3) * 0.3
+    daemons = []
+    for _ in range(n_daemons):
+        daemons.append(DaemonState(
+            p_L=float(np.clip(0.5 + 0.005 * rng.standard_normal(), 0, 1)),
+            c=0.001 * rng.standard_normal() + 0.001j * rng.standard_normal(),
+            E=0.5,
+            b=0.0,
+            R=R_shared + 0.001 * rng.standard_normal((3, 3)),
+            tau=0.5,
+            pi=float(np.clip(0.5 + 0.005 * rng.standard_normal(), 0, 1)),
+            Omega_prev=omega_op,
+        ))
+    torsion_links = initialise_torsion_links(daemons)
+    return daemons, neighbours, torsion_links, rng
+
+
+def run_master_chain(d: DerivedConstants,
+                     lattice_side: int = 5,
+                     n_ticks: int = 400,
+                     seed: int = 17,
+                     baryonic_load: float = 0.0,
+                     state_constructor: Optional[Any] = None) -> MasterChainTrajectory:
+    """Run the full FPM master chain on a finite periodic cubic lattice.
+
+    The daemons start in the safe interior of [0, E_max] with Omega_prev set
+    to the typical operating viscosity, so the first-tick smoothness term is
+    not artificially large. Perturbations are kept small enough that the
+    closed-universe conservation theorem (sum r = sum L) holds without
+    significant clip events.
+    """
+    constructor = state_constructor or initialise_master_chain_state
+    daemons, neighbours, torsion_links, rng = constructor(
+        d, lattice_side=lattice_side, seed=seed
+    )
+    n_daemons = lattice_side ** 3
     torsion_partner = {
         a: b for a, b in torsion_links
     }
@@ -3399,6 +3688,43 @@ def run_master_chain(d: DerivedConstants,
         traj.site_landauer_debit.append(site_landauer)
 
     return traj
+
+
+def shared_initialization_regression(d: DerivedConstants) -> Dict[str, Any]:
+    """Establish exact state and PRNG equivalence across the init refactor.
+
+    The subsequent 400-tick update code is shared.  Equality of every initial
+    daemon field, topology object, torsion pairing, and post-initialization
+    PRNG state therefore entails equality of the complete deterministic
+    trajectory without encoding a host-specific hash of floating-point bytes.
+    """
+    new_state = initialise_master_chain_state(d, lattice_side=5, seed=17)
+    old_state = legacy_master_chain_state(d, lattice_side=5, seed=17)
+    new_daemons, new_neighbours, new_links, new_rng = new_state
+    old_daemons, old_neighbours, old_links, old_rng = old_state
+    daemon_fields = ["psi", "E", "b", "R", "tau", "pi", "Omega_prev", "z_clock", "internal_state_advances"]
+    mismatched_fields = []
+    for index, (new_daemon, old_daemon) in enumerate(zip(new_daemons, old_daemons)):
+        for field_name in daemon_fields:
+            new_value = getattr(new_daemon, field_name)
+            old_value = getattr(old_daemon, field_name)
+            equal = (
+                np.array_equal(new_value, old_value)
+                if isinstance(new_value, np.ndarray) else new_value == old_value
+            )
+            if not equal:
+                mismatched_fields.append(f"daemon[{index}].{field_name}")
+    topology_equal = new_neighbours == old_neighbours and new_links == old_links
+    prng_state_equal = new_rng.bit_generator.state == old_rng.bit_generator.state
+    return {
+        "state": "5_CUBED_SEED_17_400_TICKS",
+        "comparison": "refactored versus literal pre-refactor constructor before the shared deterministic 400-tick update",
+        "initial_daemon_field_mismatches": mismatched_fields,
+        "neighbour_and_torsion_topology_match": topology_equal,
+        "post_initialization_prng_state_match": prng_state_equal,
+        "complete_trajectory_consequence": "The per-tick update is shared after initialization; exact equality of state, topology, and PRNG state implies the same deterministic 400-tick binary64 trajectory on a given runtime.",
+        "verdict": "PASS" if not mismatched_fields and topology_equal and prng_state_equal else "FAIL",
+    }
 
 
 # =============================================================================
@@ -3863,6 +4189,7 @@ def main() -> None:
     th5 = theorem5_alpha_pp_convergence(d)
     th6 = theorem6_lattice_anisotropy_decay(d)
     th7 = theorem7_homogeneous_replenishment_spectrum(d)
+    th8 = theorem8_route_temperature_canonicality(d)
     print(f"  T1 dispersion contraction: D*={th1['D_star']:.6e}, "
           f"violations={th1['violations']}/{th1['n_total']}")
     print(f"  T2 order sensitivity:      differ={th2['differ']}")
@@ -3871,6 +4198,7 @@ def main() -> None:
     print(f"  T5 alpha_PP convergence:    residual={th5['residual_relative']:.2e}")
     print(f"  T6 lattice anisotropy:      A4_zero_mean={th6['A4_zero_mean']}")
     print(f"  T7 homogeneous spectrum:    Fourier residual={th7['direct_fourier_character_residual']:.2e}")
+    print(f"  T8 route-temperature audit: {th8['declared_state']['status']}")
     print()
 
     print("Layer 6: Building the eight physical bridges...")
@@ -3959,7 +4287,7 @@ def main() -> None:
     print(f"     -> This result is conditional on the calorimetric state-law extension.")
     print()
 
-    validation_suite = "17 primary experiments plus 1 starvation subtest (8b)"
+    validation_suite = "18 primary experiments plus 1 starvation subtest (8b)"
     print(f"Layer 8: Running validation suite: {validation_suite}...")
     experiments = run_all_experiments(d)
     for e in experiments:
@@ -3992,6 +4320,9 @@ def main() -> None:
     print(f"  Mean kappa (final 50):       {np.mean(traj.mean_kappa[-50:]):.4f}")
     print(f"  Mean D (final 50):           {np.mean(traj.mean_D[-50:]):.4e}")
     print(f"  Metabolic modes seen:        {sorted(set(traj.metabolic_mode))}")
+    init_regression = shared_initialization_regression(d)
+    th8["shared_initialization_regression"] = init_regression
+    print(f"  Shared-initialization regression: {init_regression['verdict']}")
     print()
 
     print("Layer 10: Auditing candidate paid-torsion signature...")
@@ -4030,6 +4361,7 @@ def main() -> None:
             "T5_alpha_PP_convergence": to_serialisable(th5),
             "T6_lattice_anisotropy_decay": to_serialisable(th6),
             "T7_homogeneous_replenishment_spectrum": to_serialisable(th7),
+            "T8_route_temperature_canonicality": to_serialisable(th8),
         },
         "bridges": {
             "lindblad": to_serialisable(b_lind),

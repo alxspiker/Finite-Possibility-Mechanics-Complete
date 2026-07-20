@@ -359,7 +359,29 @@ def manuscript(styles):
             "Detailed balance immediately yields stationarity: P<sub>t</sub><super>T</super>&rho;<sub>t</sub><super>eq</super>=&rho;<sub>t</sub><super>eq</super>. The normalized vector &rho;<sub>t</sub><super>eq</super> is an observer-level description of the frozen kernel's equilibrium; computing it is not part of the local one-tick transport update.",
             styles,
         ),
-        h2("5.3 Exact homogeneous cubic spectrum", styles),
+        h2("5.3 Route-temperature canonicality boundary", styles),
+        body(
+            "Detailed balance identifies an equilibrium activity potential, not a thermodynamic temperature. On a connected active undirected graph, define g<sub>ij</sub>=ln(P<sub>ij</sub>/P<sub>ji</sub>) and d<sub>ij</sub>=L<sub>j</sub>-L<sub>i</sub> on every edge. Theorem 2 gives g<sub>ij</sub>=ln(w<sub>j</sub>/w<sub>i</sub>). A scalar canonical route-temperature law would require the additional relation g<sub>ij</sub>=-&beta;<sub>L</sub>d<sub>ij</sub> on every edge, with &beta;<sub>L</sub>=epsilon<sub>L</sub>/(k<sub>B</sub>T)&gt;0 only after a positive energy-per-route dictionary epsilon<sub>L</sub> is supplied.",
+            styles,
+        ),
+        statement(
+            "Route-temperature canonicality boundary",
+            "The local kernel derives the activity potential -ln(w<sub>i</sub>). It does not derive a Boltzmann relation between that potential and route cost L<sub>i</sub>.",
+            styles,
+        ),
+        body(
+            "Proof. Theorem 2 fixes only the ratio P<sub>ij</sub>/P<sub>ji</sub>=w<sub>j</sub>/w<sub>i</sub>. Neither the transition rule nor Axioms A1-A5 imposes ln(w<sub>j</sub>/w<sub>i</sub>)=-&beta;<sub>L</sub>(L<sub>j</sub>-L<sub>i</sub>). Thus the latter is an independent state-law condition, which can be tested edge by edge. QED.",
+            styles,
+        ),
+        body(
+            "The criterion is necessary and sufficient on that connected graph: g<sub>ij</sub>=-&beta;<sub>L</sub>d<sub>ij</sub> on every edge if and only if ln(w<sub>i</sub>)=C-&beta;<sub>L</sub>L<sub>i</sub>, equivalently &rho;<sub>i</sub><super>eq</super> is proportional to exp(-&beta;<sub>L</sub>L<sub>i</sub>). If route cost is nonconstant, &beta;<sub>L</sub> is unique and its unweighted least-squares value is -(d dot g)/(d dot d); the relation holds exactly when g+&beta;<sub>L</sub>d=0 on every edge. If d=0 on every edge, connectedness makes g=0 equivalent to uniform activity and leaves &beta;<sub>L</sub> unidentifiable; nonuniform activity rules out every scalar relation. A positive finite Kelvin temperature additionally requires &beta;<sub>L</sub>&gt;0 and a separately supplied positive epsilon<sub>L</sub>.",
+            styles,
+        ),
+        body(
+            "For the declared first master-chain action state (5<sup>3</sup> sites, seed 17, torsion initialization, then the tick-zero truth-target update before replenishment), the unweighted 375-edge least-squares estimate is &beta;<sub>L</sub>=-0.0019023970513 and the normalized incompatibility ||g+&beta;<sub>L</sub>d||<sub>2</sub>/||g||<sub>2</sub>=0.999993565405. The raw detailed-balance flux residual max|w<sub>i</sub>P<sub>ij</sub>-w<sub>j</sub>P<sub>ji</sub>| is 1.73x10<sup>-18</sup>; separately, the maximum log-ratio activity-potential residual max|g-ln(w<sub>j</sub>/w<sub>i</sub>)| is 2.22x10<sup>-16</sup>. Two edges alone witness non-collinearity: (5,9) gives -g/d=-0.1600522947 and (67,72) gives 0.9768490669, with determinant g<sub>1</sub>d<sub>2</sub>-g<sub>2</sub>d<sub>1</sub>=-4.5512145855x10<sup>-4</sup>. The declared state therefore admits no scalar canonical temperature conjugate to L. This does not prohibit a separately postulated thermodynamic state law or a different energy observable.",
+            styles,
+        ),
+        h2("5.4 Exact homogeneous cubic spectrum", styles),
         body(
             "Fix a periodic cubic lattice of side n, constant activity w<sub>i</sub>=w<sub>0</sub>, and constant viscosity &Omega;<sub>i</sub>=&Omega;<sub>0</sub>. Write &mu;=1-&Omega;<sub>0</sub>. The transport operator is then translation invariant and symmetric:",
             styles,

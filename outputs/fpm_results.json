@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "Validation_Suite": "17 primary experiments plus 1 starvation subtest (8b)"
+    "Validation_Suite": "18 primary experiments plus 1 starvation subtest (8b)"
   },
   "axioms": {
     "dim_space": 3,
@@ -963,6 +963,129 @@
         "leading_log_power_ratio_at_ticks": 3.029242869862077
       },
       "verdict": "PASS"
+    },
+    "T8_route_temperature_canonicality": {
+      "theorem_name": "Route-cost canonicality boundary",
+      "scope": "FROZEN_DECLARED_STATE_AND_EXPLICIT_EDGE_CRITERION_ONLY",
+      "statement": "Detailed balance derives the activity potential -log(w_i), not a Boltzmann relation between that potential and route cost L_i.",
+      "declared_state": {
+        "edge_count": 375,
+        "active_graph_connected": true,
+        "criterion": "g_ij=log(P_ij/P_ji)=-beta_L(L_j-L_i)",
+        "edge_relation_from_detailed_balance": "g_ij=log(w_j/w_i)",
+        "detailed_balance_flux_max_residual": 1.734723475976807e-18,
+        "activity_potential_log_ratio_max_residual": 2.2203105239787524e-16,
+        "route_cost_variation_norm_sq": 0.034901532339475794,
+        "activity_potential_variation_norm_sq": 0.009815151485114472,
+        "tolerance": 1e-10,
+        "status": "NO_SCALAR_ROUTE_TEMPERATURE",
+        "beta_hat": -0.0019023970512967192,
+        "normalized_residual": 0.9999935654049881,
+        "maximum_edge_residual": 0.01423886366242685,
+        "correlation_d_g": 0.004690408640951682,
+        "two_edge_collinearity_determinant": -0.0004551214585496925,
+        "witness_edges": [
+          {
+            "edge": [
+              5,
+              9
+            ],
+            "delta_L": 0.02791564918484346,
+            "log_kernel_ratio": 0.004467963710984611,
+            "edgewise_beta": -0.16005229473260646
+          },
+          {
+            "edge": [
+              67,
+              72
+            ],
+            "delta_L": -0.014340252357098404,
+            "log_kernel_ratio": 0.01400826213363263,
+            "edgewise_beta": 0.9768490668644726
+          }
+        ],
+        "state_definition": "FIRST_MASTER_CHAIN_ACTION_STATE_AFTER_TICK_ZERO_TRUTH_TARGET_BEFORE_REPLENISHMENT",
+        "lattice_side": 5,
+        "seed": 17,
+        "route_cost_min": 0.3809141622572295,
+        "route_cost_max": 0.40930942043977103
+      },
+      "controls": {
+        "positive_canonical_control": {
+          "edge_count": 81,
+          "active_graph_connected": true,
+          "criterion": "g_ij=log(P_ij/P_ji)=-beta_L(L_j-L_i)",
+          "edge_relation_from_detailed_balance": "g_ij=log(w_j/w_i)",
+          "detailed_balance_flux_max_residual": 6.938893903907228e-18,
+          "activity_potential_log_ratio_max_residual": 0.0,
+          "route_cost_variation_norm_sq": 7.269230769230769,
+          "activity_potential_variation_norm_sq": 3.561923076923076,
+          "tolerance": 1e-10,
+          "status": "CANONICAL_POSITIVE_BETA",
+          "beta_hat": 0.7000000000000001,
+          "normalized_residual": 4.1247769532966396e-16,
+          "maximum_edge_residual": 2.0816681711721685e-16,
+          "correlation_d_g": -1.0,
+          "witness_edges": []
+        },
+        "one_weight_perturbation_negative_control": {
+          "edge_count": 81,
+          "active_graph_connected": true,
+          "criterion": "g_ij=log(P_ij/P_ji)=-beta_L(L_j-L_i)",
+          "edge_relation_from_detailed_balance": "g_ij=log(w_j/w_i)",
+          "detailed_balance_flux_max_residual": 6.938893903907228e-18,
+          "activity_potential_log_ratio_max_residual": 0.0,
+          "route_cost_variation_norm_sq": 7.269230769230769,
+          "activity_potential_variation_norm_sq": 3.678665302396965,
+          "tolerance": 1e-10,
+          "status": "NO_SCALAR_ROUTE_TEMPERATURE",
+          "beta_hat": 0.7100678116540099,
+          "normalized_residual": 0.06068221805045633,
+          "maximum_edge_residual": 0.04840294064427782,
+          "correlation_d_g": -0.9959325824310103,
+          "witness_edges": []
+        },
+        "constant_cost_uniform_activity_control": {
+          "edge_count": 81,
+          "active_graph_connected": true,
+          "criterion": "g_ij=log(P_ij/P_ji)=-beta_L(L_j-L_i)",
+          "edge_relation_from_detailed_balance": "g_ij=log(w_j/w_i)",
+          "detailed_balance_flux_max_residual": 0.0,
+          "activity_potential_log_ratio_max_residual": 0.0,
+          "route_cost_variation_norm_sq": 0.0,
+          "activity_potential_variation_norm_sq": 0.0,
+          "tolerance": 1e-10,
+          "status": "UNIDENTIFIABLE_CONSTANT_ROUTE_COST_UNIFORM_ACTIVITY",
+          "beta_hat": null,
+          "normalized_residual": null,
+          "maximum_edge_residual": 0.0
+        },
+        "constant_cost_nonuniform_activity_control": {
+          "edge_count": 81,
+          "active_graph_connected": true,
+          "criterion": "g_ij=log(P_ij/P_ji)=-beta_L(L_j-L_i)",
+          "edge_relation_from_detailed_balance": "g_ij=log(w_j/w_i)",
+          "detailed_balance_flux_max_residual": 6.938893903907228e-18,
+          "activity_potential_log_ratio_max_residual": 1.249000902703301e-16,
+          "route_cost_variation_norm_sq": 0.0,
+          "activity_potential_variation_norm_sq": 0.6542307692307692,
+          "tolerance": 1e-10,
+          "status": "NO_SCALAR_ROUTE_TEMPERATURE_CONSTANT_COST_NONUNIFORM_ACTIVITY",
+          "beta_hat": null,
+          "normalized_residual": null,
+          "maximum_edge_residual": 0.20769230769230773
+        }
+      },
+      "verdict": "PASS",
+      "shared_initialization_regression": {
+        "state": "5_CUBED_SEED_17_400_TICKS",
+        "comparison": "refactored versus literal pre-refactor constructor before the shared deterministic 400-tick update",
+        "initial_daemon_field_mismatches": [],
+        "neighbour_and_torsion_topology_match": true,
+        "post_initialization_prng_state_match": true,
+        "complete_trajectory_consequence": "The per-tick update is shared after initialization; exact equality of state, topology, and PRNG state implies the same deterministic 400-tick binary64 trajectory on a given runtime.",
+        "verdict": "PASS"
+      }
     }
   },
   "bridges": {
@@ -19215,6 +19338,126 @@
           "power_ratio_after_ticks": 19.495974870589787,
           "leading_log_power_ratio": "t*mu*(sum_a m_axis,a^4-sum_a m_mixed,a^4)*(2*pi/n)^4/36+O((2*pi|m|/n)^6)",
           "leading_log_power_ratio_at_ticks": 3.029242869862077
+        },
+        "verdict": "PASS"
+      }
+    },
+    {
+      "name": "Route-temperature canonicality boundary",
+      "key_metric": "normalized scalar-canonicality residual",
+      "value": 0.9999935654049881,
+      "verdict": "PASS",
+      "details": {
+        "theorem_name": "Route-cost canonicality boundary",
+        "scope": "FROZEN_DECLARED_STATE_AND_EXPLICIT_EDGE_CRITERION_ONLY",
+        "statement": "Detailed balance derives the activity potential -log(w_i), not a Boltzmann relation between that potential and route cost L_i.",
+        "declared_state": {
+          "edge_count": 375,
+          "active_graph_connected": true,
+          "criterion": "g_ij=log(P_ij/P_ji)=-beta_L(L_j-L_i)",
+          "edge_relation_from_detailed_balance": "g_ij=log(w_j/w_i)",
+          "detailed_balance_flux_max_residual": 1.734723475976807e-18,
+          "activity_potential_log_ratio_max_residual": 2.2203105239787524e-16,
+          "route_cost_variation_norm_sq": 0.034901532339475794,
+          "activity_potential_variation_norm_sq": 0.009815151485114472,
+          "tolerance": 1e-10,
+          "status": "NO_SCALAR_ROUTE_TEMPERATURE",
+          "beta_hat": -0.0019023970512967192,
+          "normalized_residual": 0.9999935654049881,
+          "maximum_edge_residual": 0.01423886366242685,
+          "correlation_d_g": 0.004690408640951682,
+          "two_edge_collinearity_determinant": -0.0004551214585496925,
+          "witness_edges": [
+            {
+              "edge": [
+                5,
+                9
+              ],
+              "delta_L": 0.02791564918484346,
+              "log_kernel_ratio": 0.004467963710984611,
+              "edgewise_beta": -0.16005229473260646
+            },
+            {
+              "edge": [
+                67,
+                72
+              ],
+              "delta_L": -0.014340252357098404,
+              "log_kernel_ratio": 0.01400826213363263,
+              "edgewise_beta": 0.9768490668644726
+            }
+          ],
+          "state_definition": "FIRST_MASTER_CHAIN_ACTION_STATE_AFTER_TICK_ZERO_TRUTH_TARGET_BEFORE_REPLENISHMENT",
+          "lattice_side": 5,
+          "seed": 17,
+          "route_cost_min": 0.3809141622572295,
+          "route_cost_max": 0.40930942043977103
+        },
+        "controls": {
+          "positive_canonical_control": {
+            "edge_count": 81,
+            "active_graph_connected": true,
+            "criterion": "g_ij=log(P_ij/P_ji)=-beta_L(L_j-L_i)",
+            "edge_relation_from_detailed_balance": "g_ij=log(w_j/w_i)",
+            "detailed_balance_flux_max_residual": 6.938893903907228e-18,
+            "activity_potential_log_ratio_max_residual": 0.0,
+            "route_cost_variation_norm_sq": 7.269230769230769,
+            "activity_potential_variation_norm_sq": 3.561923076923076,
+            "tolerance": 1e-10,
+            "status": "CANONICAL_POSITIVE_BETA",
+            "beta_hat": 0.7000000000000001,
+            "normalized_residual": 4.1247769532966396e-16,
+            "maximum_edge_residual": 2.0816681711721685e-16,
+            "correlation_d_g": -1.0,
+            "witness_edges": []
+          },
+          "one_weight_perturbation_negative_control": {
+            "edge_count": 81,
+            "active_graph_connected": true,
+            "criterion": "g_ij=log(P_ij/P_ji)=-beta_L(L_j-L_i)",
+            "edge_relation_from_detailed_balance": "g_ij=log(w_j/w_i)",
+            "detailed_balance_flux_max_residual": 6.938893903907228e-18,
+            "activity_potential_log_ratio_max_residual": 0.0,
+            "route_cost_variation_norm_sq": 7.269230769230769,
+            "activity_potential_variation_norm_sq": 3.678665302396965,
+            "tolerance": 1e-10,
+            "status": "NO_SCALAR_ROUTE_TEMPERATURE",
+            "beta_hat": 0.7100678116540099,
+            "normalized_residual": 0.06068221805045633,
+            "maximum_edge_residual": 0.04840294064427782,
+            "correlation_d_g": -0.9959325824310103,
+            "witness_edges": []
+          },
+          "constant_cost_uniform_activity_control": {
+            "edge_count": 81,
+            "active_graph_connected": true,
+            "criterion": "g_ij=log(P_ij/P_ji)=-beta_L(L_j-L_i)",
+            "edge_relation_from_detailed_balance": "g_ij=log(w_j/w_i)",
+            "detailed_balance_flux_max_residual": 0.0,
+            "activity_potential_log_ratio_max_residual": 0.0,
+            "route_cost_variation_norm_sq": 0.0,
+            "activity_potential_variation_norm_sq": 0.0,
+            "tolerance": 1e-10,
+            "status": "UNIDENTIFIABLE_CONSTANT_ROUTE_COST_UNIFORM_ACTIVITY",
+            "beta_hat": null,
+            "normalized_residual": null,
+            "maximum_edge_residual": 0.0
+          },
+          "constant_cost_nonuniform_activity_control": {
+            "edge_count": 81,
+            "active_graph_connected": true,
+            "criterion": "g_ij=log(P_ij/P_ji)=-beta_L(L_j-L_i)",
+            "edge_relation_from_detailed_balance": "g_ij=log(w_j/w_i)",
+            "detailed_balance_flux_max_residual": 6.938893903907228e-18,
+            "activity_potential_log_ratio_max_residual": 1.249000902703301e-16,
+            "route_cost_variation_norm_sq": 0.0,
+            "activity_potential_variation_norm_sq": 0.6542307692307692,
+            "tolerance": 1e-10,
+            "status": "NO_SCALAR_ROUTE_TEMPERATURE_CONSTANT_COST_NONUNIFORM_ACTIVITY",
+            "beta_hat": null,
+            "normalized_residual": null,
+            "maximum_edge_residual": 0.20769230769230773
+          }
         },
         "verdict": "PASS"
       }
