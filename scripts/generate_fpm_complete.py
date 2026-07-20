@@ -2555,74 +2555,56 @@ def build_part_vi():
                                        "correlation before LRM quantization. Right: "
                                        "the joint torsion bridge reaches the "
                                        "Tsirelson bound S = 2.828427."))
-    gated = RESULTS.get('bridges', {}).get('zombie_gated_bell_signature', {})
-    flow.append(Paragraph("23.9 Proposed Experimental Signature: ZOMBIE-Gated Bell Violation",
+    gated = RESULTS.get('bridges', {}).get('paid_torsion_bell_signature', {})
+    flow.append(Paragraph("23.9 Candidate Experimental Signature: Paid Torsion-Refresh Gate",
                           styles['H2']))
     flow.append(theorem(
-        "<b>Proposed Falsification Target.</b> FPM predicts that the clean "
-        "joint torsion Bell violation is gated by simultaneous deep ZOMBIE "
-        "operation of both linked parties. If the shared pure-gauge torsion "
-        "boundary is absent, or if either wing remains in the high-energy "
-        "FLOW regime, the CHSH value remains Bell-classical. When both linked "
-        "wings are driven deep below the ZOMBIE threshold, the effective CHSH "
-        "value rises toward 2 sqrt(2)." ))
+        "<b>Candidate extension.</b> An experimentally usable shared torsion "
+        "link is postulated to pay one refresh transaction per active "
+        "antisymmetric generator on each tick. The joint Bell rule applies "
+        "only while both wings can pay that maintenance cost." ))
     flow.append(Paragraph(
-        "The simulator models the joint-boundary resolution quality as "
-        "a smooth finite-resource gate controlled by the higher-energy wing:",
+        "For the one-generator seed, the candidate gate is deterministic:",
         styles['Body']))
     flow.extend(eq(
-        r"q(E_A,E_B)=\frac{1}{1+\exp\{10[\max(E_A,E_B)/E_{\rm zombie}-0.60]\}},\qquad "
-        r"E_{\rm zombie}=0.20E_{\max}"))
+        r"q(A_A,A_B)=H\!\left(\min(A_A,A_B)-n_Ac_0\right),\qquad n_A=1,\quad c_0=0.05"))
     flow.extend(eq(
-        r"S_{\rm eff}(E_A,E_B)=S_{\rm local}+q(E_A,E_B)\,[S_{\rm joint}-S_{\rm local}]"))
-    thresholds = gated.get('causal_loading_thresholds', {}) if gated else {}
-    prohibited = gated.get('prohibited_zone_against_flat_QM_Tsirelson', {}) if gated else {}
+        r"S_{\rm eff}(A_A,A_B)=2+(2\sqrt{2}-2)q(A_A,A_B)."))
     flow.append(Paragraph(
-        "For experimental comparison the simulator exports this same gate as a "
-        "dimensionless causal-loading curve S(L), with L = E/E<sub>zombie</sub>. "
-        "A laboratory implementation may calibrate L from the coincidence-rate "
-        "to thermal-noise-floor ratio, normalized so the q = 0.5 transition "
-        "falls at L = 0.60. In the protocol curve, "
-        f"S = 2.80 occurs at L = {thresholds.get('S_2.80', 0.2663):.4f}, "
-        f"S = 2.50 at L = {thresholds.get('S_2.50', 0.5580):.4f}, and "
-        f"S = 2.10 at L = {thresholds.get('S_2.10', 0.7989):.4f}. "
-        "Against a flat standard-QM Tsirelson reference, the simulator marks "
-        "the prohibited-zone onset "
-        f"|S<sub>QM</sub> - S<sub>FPM</sub>| &gt; 0.05 at "
-        f"L = {prohibited.get('delta_gt_0.05_loading_min', 0.3274):.4f}.",
+        "With A(B)=A<sub>0</sub> max[(1+B)<sup>-3/4</sup>, e<sub>floor</sub>] "
+        "and A<sub>0</sub>=0.5, the conditional candidate snap occurs at "
+        f"B* = {gated.get('conditional_baryonic_snap_threshold', 20.5443469):.7f}. "
+        "The boundary is a consequence of the adopted refresh postulate, not "
+        "a sigmoid fit.",
         styles['Body']))
     flow.append(derivation(
-        "<b>Interpretation.</b> The higher-energy wing limits the shared "
-        "boundary resolution because an unstarved daemon can still resolve "
-        "locally. The signature is therefore not a distortion of the angular "
-        "cosine curve; in deep ZOMBIE mode the angular dependence remains "
-        "within finite microcell precision of -cos(delta). The proposed "
-        "observable is the energy-budget gate itself." ))
+        "<b>Interpretation.</b> The shared link survives only if both wings "
+        "have available action at or above n<sub>A</sub>c<sub>0</sub>. The "
+        "candidate observable is a resource-controlled transition between the "
+        "joint and local CHSH limits." ))
     flow.append(derivation(
         "<b>Contrast with standard quantum mechanics.</b> Standard quantum "
         "mechanics predicts Bell correlations from the prepared entangled "
         "state and analyzer settings. It does not include an FPM-style "
         "resource-budget switch that collapses CHSH to the Bell-classical "
-        "regime when one wing remains in FLOW mode. This makes the gate a "
-        "qualitative, falsifiable candidate signature rather than a fitted "
-        "calibration parameter." ))
-    flow.extend(chart_img(os.path.join(SIM_CHARTS_DIR, 'fpm_zombie_gated_bell.png'),
+        "regime when either wing cannot pay the link-maintenance cost. This "
+        "makes the gate a candidate signature conditional on the refresh "
+        "postulate." ))
+    flow.extend(chart_img(os.path.join(SIM_CHARTS_DIR, 'fpm_paid_torsion_bell.png'),
                           width_cm=16.0,
-                          caption_text="Figure 11. Proposed ZOMBIE-gated Bell signature "
+                          caption_text="Figure 11. Candidate paid torsion-refresh Bell signature "
                                        "as a causal-loading protocol. Left: CHSH is plotted "
-                                       "against L = E/E_zombie with threshold markers and the "
-                                       "region where the FPM curve diverges from a flat "
-                                       "standard-QM Tsirelson reference. Right: the two-wing "
-                                       "surface shows that one FLOW wing suppresses the joint "
-                                       "violation."))
+                                       "against candidate baryonic load with the deterministic "
+                                       "threshold B*. Right: the two-wing surface shows that "
+                                       "either unpaid wing suppresses the joint violation."))
     if gated:
         flow.append(result_box(
             "<b>Audit:</b> "
-            f"S(no torsion link, deep ZOMBIE) = {gated.get('S_no_torsion_link_deep_zombie', 2.0):.6f}; "
-            f"S(one FLOW wing, one deep ZOMBIE) = {gated.get('S_one_wing_flow_one_deep_zombie', 2.0):.6f}; "
-            f"S(both deep ZOMBIE) = {gated.get('S_both_deep_zombie', 2.828):.6f}. "
-            "This is a proposed experimental signature pending independent "
-            "physical implementation, not an established laboratory result." ))
+            f"S(no torsion link) = {gated.get('S_no_torsion_link', 2.0):.6f}; "
+            f"S(one wing starved) = {gated.get('S_one_wing_starved', 2.0):.6f}; "
+            f"S(both links paid) = {gated.get('S_both_links_paid', 2.828):.6f}. "
+            "This is a candidate extension result, not an established "
+            "laboratory result." ))
     flow.append(result_box(
         "<b>Result:</b> The simulator distinguishes the local torsion "
         "failure mode from the joint torsion measurement rule. The joint rule "

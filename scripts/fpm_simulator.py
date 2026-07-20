@@ -7,7 +7,7 @@ Finite Possibility Mechanics (FPM) -- COMPLETE CLOSED-FORM SIMULATOR
 Zenodo DOI: https://doi.org/10.5281/zenodo.21420735
 
 A single self-contained Python simulator that:
-  * takes the five FPM axioms as the ONLY inputs,
+  * takes the five FPM axioms plus explicitly labelled candidate extensions,
   * re-derives every one of the 22 constants inline (zero fitted parameters),
   * runs the per-tick master chain on a Z^3 lattice of daemons,
   * runs all 16 numerical validation experiments (incl. N_bit_eq, Born, Bell, fine-structure, and runtime torsion audits),
@@ -73,7 +73,6 @@ K_B = 1.380649e-23           # J/K
 C_LIGHT = 2.99792458e8       # m/s
 M_E = 9.1093837015e-31       # kg electron mass
 G_CODATA = 6.67430e-11       # m^3 kg^-1 s^-2 (CODATA 2018)
-T_SUBSTRATE = 300.0          # K -- substrate operating temperature
 
 # Planck 2018 reference values (used only as external check)
 PLANCK_NS = 0.965
@@ -109,7 +108,7 @@ os.makedirs(SIMULATOR_CHARTS_DIR, exist_ok=True)
 
 @dataclass(frozen=True)
 class Axioms:
-    """The five FPM axioms (the ONLY inputs)."""
+    """The five foundational FPM axioms; candidate extensions are declared separately."""
     # A1
     dim_space: int = 3                 # x, y, z on Z^3
     dim_causal: int = 4                # (x, y, z, t) by A4
@@ -134,7 +133,6 @@ class Axioms:
     m_e: float = M_E
     h_planck: float = H_PLANCK
     k_B: float = K_B
-    T_substrate: float = T_SUBSTRATE
 
     @property
     def n_directed(self) -> int:
@@ -154,7 +152,8 @@ class Axioms:
 # =============================================================================
 # LAYER 1 -- DERIVED CONSTANTS (zero fitted parameters)
 # =============================================================================
-# Every constant below is computed from Axioms via the derivations in the paper.
+# Foundational constants are computed from Axioms. Candidate-extension outputs
+# are labelled separately and are not presented as axiomatic derivations.
 # =============================================================================
 
 
@@ -218,6 +217,8 @@ class DerivedConstants:
     f_univ: float = 0.0           # Hz, = 1/dt_univ ~ 86.8 ZHz
 
     # ---- Calibration Result 2: G_FPM (Section 25) -------------------------
+    thermal_channel_count: int = 0 # candidate 9-channel equipartition count
+    T_calorimetric: float = 0.0 # K, candidate equipartition state law
     zeta: float = 0.0             # = 9/(4*pi*L_max)
     J_per_bit_eq: float = 0.0     # = N_bit_eq * k_B * T * ln2
     mu_M_FPM: float = 0.0        # mass-to-route injection efficiency
@@ -449,11 +450,20 @@ def derive_all(ax: Axioms) -> DerivedConstants:
     d.dx_univ = ax.c_light * d.dt_univ
     d.f_univ = 1.0 / d.dt_univ
 
-    # ---- Calibration Result 2: G_FPM ---------------------------------------
+    # ---- Candidate 9-channel equipartition state law and G_FPM ------------
+    # A1 supplies a native nine-channel carrier. The equal thermal partition
+    # is an explicit extension, not a sixth foundational axiom:
+    # epsilon_R = h/(n_eff*dt_univ), n_eff = n_directed, and
+    # T = h E_max / (n_eff*N*k_B*ln(2)*dt_univ).
+    d.thermal_channel_count = d.n_directed
+    d.T_calorimetric = (
+        ax.h_planck * d.E_max
+        / (d.thermal_channel_count * d.N_bit_eq * ax.k_B * math.log(2.0) * d.dt_univ)
+    )
     # zeta = 9 / (4*pi*L_max)
     d.zeta = d.n_directed / (4.0 * math.pi * d.L_max)        # ~0.2180
     # J = N_bit_eq * k_B * T * ln 2
-    d.J_per_bit_eq = d.N_bit_eq * ax.k_B * ax.T_substrate * math.log(2.0)
+    d.J_per_bit_eq = d.N_bit_eq * ax.k_B * d.T_calorimetric * math.log(2.0)
     # mu_M_FPM = (2/3) * zeta / ((alpha_PP + 9) * N_bit_eq^4)
     d.mu_M_FPM = (2.0 / 3.0) * d.zeta / ((d.alpha_PP + 9.0) * d.N_bit_eq ** 4)
     # G_FPM = mu_M_FPM * zeta * c^4 * dx_univ / J
@@ -484,6 +494,8 @@ class DaemonState:
     tau: float = 0.5               # local mean-field truth target
     pi: float = 0.5                # fallback prior
     Omega_prev: float = 0.85       # viscosity at previous tick (for |dOmega|)
+    z_clock: float = 0.0           # candidate internal progress remainder
+    internal_state_advances: int = 0
 
     def __init__(self,
                  psi: Optional[np.ndarray] = None,
@@ -495,7 +507,9 @@ class DaemonState:
                  R: Optional[np.ndarray] = None,
                  tau: float = 0.5,
                  pi: float = 0.5,
-                 Omega_prev: float = 0.85):
+                 Omega_prev: float = 0.85,
+                 z_clock: float = 0.0,
+                 internal_state_advances: int = 0):
         if psi is None:
             if p_R is None:
                 p_R = 1.0 - p_L
@@ -507,6 +521,8 @@ class DaemonState:
         self.tau = float(tau)
         self.pi = float(pi)
         self.Omega_prev = float(Omega_prev)
+        self.z_clock = float(z_clock)
+        self.internal_state_advances = int(internal_state_advances)
 
     @staticmethod
     def _normalise_psi(psi: np.ndarray) -> np.ndarray:
@@ -585,6 +601,21 @@ class DaemonState:
         if route_costs.shape != (9,):
             raise ValueError("route_costs must be a 9-channel array")
         self.psi = self._normalise_psi(self.psi * np.exp(-1j * theta * route_costs))
+
+    def advance_internal_clock(self, L_rest: float, L_current: float) -> int:
+        """Apply the candidate integer-crossing progress scheduler.
+
+        This scheduler is a separate clock-to-carrier extension. It does not
+        alter the existing U(1) phase update or identify a laboratory clock.
+        """
+        if L_rest <= 0.0 or L_current <= 0.0:
+            raise ValueError("clock scheduler requires positive action values")
+        self.z_clock += L_rest / L_current
+        advances = int(math.floor(self.z_clock + 1e-15))
+        if advances:
+            self.z_clock -= advances
+            self.internal_state_advances += advances
+        return advances
 
     def quantize_microcells(self, d: DerivedConstants) -> Dict[str, Any]:
         probs = self.born_probabilities()
@@ -1231,7 +1262,7 @@ def bridge_lindblad(daemon: DaemonState, kappa: float, dt: float) -> Dict[str, f
 
 
 def bridge_landauer(daemon: DaemonState, d: DerivedConstants,
-                    T: float = T_SUBSTRATE) -> Dict[str, float]:
+                    T: Optional[float] = None) -> Dict[str, float]:
     """Bridge 2: Landauer energy / mass ladder.
 
     Delta Q = B_erase * k_B * T * ln 2
@@ -1239,6 +1270,8 @@ def bridge_landauer(daemon: DaemonState, d: DerivedConstants,
     m = C * J / c^2
     """
     dQ = 1.0 * d.k_B * T * math.log(2.0) if hasattr(d, "k_B") else 0.0
+    if T is None:
+        T = d.T_calorimetric
     J = d.N_bit_eq * K_B * T * math.log(2.0)
     m_eq = J / C_LIGHT ** 2
     return {
@@ -1247,6 +1280,8 @@ def bridge_landauer(daemon: DaemonState, d: DerivedConstants,
         "mass_equivalent_kg": m_eq,
         "mass_equivalent_eV": m_eq * C_LIGHT ** 2 / 1.602176634e-19,
         "landauer_per_bit_J": K_B * T * math.log(2.0),
+        "temperature_K": T,
+        "temperature_status": "CANDIDATE_9_CHANNEL_EQUIPARTITION_STATE_LAW",
     }
 
 
@@ -1856,36 +1891,39 @@ def audit_joint_torsion_bell_bridge(d: DerivedConstants,
     }
 
 
-def zombie_joint_resolution_quality(energy_a: float,
-                                    energy_b: float,
-                                    d: DerivedConstants,
-                                    sharpness: float = 10.0,
-                                    midpoint_ratio: float = 0.60,
-                                    torsion_link_active: bool = True) -> float:
-    """Smooth joint-resolution gate for the ZOMBIE-gated Bell signature."""
+def torsion_refresh_quality(available_action_a: float,
+                            available_action_b: float,
+                            d: DerivedConstants,
+                            active_generators: int = 1,
+                            torsion_link_active: bool = True) -> float:
+    """Deterministic candidate gate for a paid shared-torsion refresh.
+
+    A usable link must pay one c0 refresh transaction per active independent
+    antisymmetric generator. The gate is deliberately binary: this candidate
+    extension has no sigmoid sharpness, midpoint, or fitted transition width.
+    """
+    if active_generators < 1:
+        raise ValueError("a torsion refresh requires at least one generator")
     if not torsion_link_active:
         return 0.0
-    E_zombie = 0.20 * d.E_max
-    limiting_ratio = max(float(energy_a), float(energy_b)) / E_zombie
-    x = sharpness * (limiting_ratio - midpoint_ratio)
-    if x > 60.0:
-        return 0.0
-    if x < -60.0:
-        return 1.0
-    return float(1.0 / (1.0 + math.exp(x)))
+    maintenance_cost = active_generators * d.c0
+    available_pair = min(float(available_action_a), float(available_action_b))
+    return 1.0 if available_pair >= maintenance_cost else 0.0
 
 
 def gated_bell_correlation(d: DerivedConstants,
                            a: float,
                            b: float,
-                           energy_a: float,
-                           energy_b: float,
+                           available_action_a: float,
+                           available_action_b: float,
+                           active_generators: int = 1,
                            torsion_link_active: bool = True) -> float:
-    """Energy-gated Bell correlation predicted by the signature audit."""
-    q = zombie_joint_resolution_quality(
-        energy_a,
-        energy_b,
+    """Paid-refresh Bell correlation for the candidate torsion extension."""
+    q = torsion_refresh_quality(
+        available_action_a,
+        available_action_b,
         d,
+        active_generators=active_generators,
         torsion_link_active=torsion_link_active,
     )
     local = bell_local_torsion_correlation(a, b)
@@ -1893,18 +1931,19 @@ def gated_bell_correlation(d: DerivedConstants,
     return float((1.0 - q) * local + q * joint)
 
 
-def audit_zombie_gated_bell_signature(d: DerivedConstants) -> Dict[str, Any]:
-    """Audit the proposed ZOMBIE-gated Bell signature."""
+def audit_paid_torsion_bell_signature(d: DerivedConstants) -> Dict[str, Any]:
+    """Audit the deterministic paid-refresh Bell signature."""
     bell = audit_joint_torsion_bell_bridge(d)
-    E_zombie = 0.20 * d.E_max
-    ratios = np.array([1.50, 1.00, 0.80, 0.60, 0.40, 0.20, 0.10, 0.05],
-                      dtype=float)
+    active_generators = 1
+    A0 = 0.5
+    maintenance_cost = active_generators * d.c0
+    ratios = np.array([1.50, 1.00, 0.80, 0.60, 0.40, 0.20, 0.10, 0.05], dtype=float)
     qualities = []
     S_values = []
     for ratio in ratios:
-        E = float(ratio * E_zombie)
-        q = zombie_joint_resolution_quality(E, E, d)
-        S = chsh_value(lambda a, b, E=E: gated_bell_correlation(d, a, b, E, E))
+        A = float(ratio * A0)
+        q = torsion_refresh_quality(A, A, d, active_generators)
+        S = chsh_value(lambda a, b, A=A: gated_bell_correlation(d, a, b, A, A))
         qualities.append(q)
         S_values.append(S)
 
@@ -1913,63 +1952,39 @@ def audit_zombie_gated_bell_signature(d: DerivedConstants) -> Dict[str, Any]:
     q_surface = np.zeros_like(S_surface)
     for i, ratio_a in enumerate(grid):
         for j, ratio_b in enumerate(grid):
-            Ea = float(ratio_a * E_zombie)
-            Eb = float(ratio_b * E_zombie)
-            q = zombie_joint_resolution_quality(Ea, Eb, d)
+            Aa = float(ratio_a * A0)
+            Ab = float(ratio_b * A0)
+            q = torsion_refresh_quality(Aa, Ab, d, active_generators)
             q_surface[i, j] = q
             S_surface[i, j] = chsh_value(
-                lambda a, b, Ea=Ea, Eb=Eb: gated_bell_correlation(d, a, b, Ea, Eb)
+                lambda a, b, Aa=Aa, Ab=Ab: gated_bell_correlation(d, a, b, Aa, Ab)
             )
 
-    causal_loading = np.logspace(math.log10(0.01), math.log10(10.0), 300)
+    causal_loading = np.linspace(0.0, 100.0, 401)
     protocol_q = []
     protocol_S = []
     for loading in causal_loading:
-        E = float(loading * E_zombie)
-        q = zombie_joint_resolution_quality(E, E, d)
-        S = chsh_value(lambda a, b, E=E: gated_bell_correlation(d, a, b, E, E))
+        depletion = causal_energy_depletion(loading, d.e_exp, d.e_floor)
+        A = A0 * depletion
+        q = torsion_refresh_quality(A, A, d, active_generators)
+        S = chsh_value(lambda a, b, A=A: gated_bell_correlation(d, a, b, A, A))
         protocol_q.append(q)
         protocol_S.append(S)
-
-    def loading_for_q(q_target: float) -> float:
-        return float(0.60 + math.log(1.0 / q_target - 1.0) / 10.0)
-
-    def loading_for_S(S_target: float) -> float:
-        for L1, S1, L2, S2 in zip(
-            causal_loading[:-1], protocol_S[:-1],
-            causal_loading[1:], protocol_S[1:],
-        ):
-            if (S1 - S_target) * (S2 - S_target) <= 0.0 and S1 != S2:
-                t = (S_target - S1) / (S2 - S1)
-                return float(L1 + t * (L2 - L1))
-        return float("nan")
-
-    def first_loading_with_qm_delta(delta: float) -> float:
-        for loading, S in zip(causal_loading, protocol_S):
-            if bell["tsirelson_bound"] - S > delta:
-                return float(loading)
-        return float("nan")
-
-    no_link_S = chsh_value(
-        lambda a, b: gated_bell_correlation(
-            d, a, b, 0.05 * E_zombie, 0.05 * E_zombie,
-            torsion_link_active=False,
-        )
-    )
-    one_flow_S = chsh_value(
-        lambda a, b: gated_bell_correlation(
-            d, a, b, 0.05 * E_zombie, 1.50 * E_zombie,
-        )
-    )
-    both_deep_S = chsh_value(
-        lambda a, b: gated_bell_correlation(
-            d, a, b, 0.05 * E_zombie, 0.05 * E_zombie,
-        )
-    )
+    B_star = (A0 / maintenance_cost) ** (4.0 / 3.0) - 1.0
+    no_link_S = chsh_value(lambda a, b: gated_bell_correlation(
+        d, a, b, A0, A0, torsion_link_active=False))
+    one_starved_S = chsh_value(lambda a, b: gated_bell_correlation(
+        d, a, b, maintenance_cost, maintenance_cost - 1e-12))
+    both_paid_S = chsh_value(lambda a, b: gated_bell_correlation(
+        d, a, b, maintenance_cost, maintenance_cost))
 
     return {
-        "audit_name": "ZOMBIE-gated Bell signature audit",
-        "E_zombie": E_zombie,
+        "audit_name": "Paid torsion-refresh Bell signature audit",
+        "candidate_extension": "TORSION_REFRESH_POSTULATE",
+        "active_generators": active_generators,
+        "maintenance_cost": maintenance_cost,
+        "reference_available_action": A0,
+        "conditional_baryonic_snap_threshold": B_star,
         "energy_ratio_grid": grid.tolist(),
         "joint_quality_surface": q_surface.tolist(),
         "S_surface": S_surface.tolist(),
@@ -1977,49 +1992,24 @@ def audit_zombie_gated_bell_signature(d: DerivedConstants) -> Dict[str, Any]:
         "causal_loading_joint_quality": protocol_q,
         "causal_loading_CHSH": protocol_S,
         "causal_loading_mapping": (
-            "Dimensionless lab protocol coordinate: L = E/E_zombie. "
-            "Operationally calibrate L from coincidence_rate / thermal_noise_floor, "
-            "normalized so the q=0.5 transition is at L=0.60."
+            "Candidate dimensionless baryonic load B with available action "
+            "A(B)=A0*max((1+B)^(-3/4), e_floor)."
         ),
-        "causal_loading_thresholds": {
-            "q_0.99": loading_for_q(0.99),
-            "q_0.95": loading_for_q(0.95),
-            "q_0.90": loading_for_q(0.90),
-            "q_0.50": 0.60,
-            "q_0.10": loading_for_q(0.10),
-            "q_0.05": loading_for_q(0.05),
-            "q_0.01": loading_for_q(0.01),
-            "S_2.80": loading_for_S(2.80),
-            "S_2.70": loading_for_S(2.70),
-            "S_2.50": loading_for_S(2.50),
-            "S_2.10": loading_for_S(2.10),
-        },
-        "prohibited_zone_against_flat_QM_Tsirelson": {
-            "delta_gt_0.01_loading_min": first_loading_with_qm_delta(0.01),
-            "delta_gt_0.02_loading_min": first_loading_with_qm_delta(0.02),
-            "delta_gt_0.05_loading_min": first_loading_with_qm_delta(0.05),
-            "delta_gt_0.10_loading_min": first_loading_with_qm_delta(0.10),
-        },
         "same_energy_ratios": ratios.tolist(),
         "same_energy_joint_quality": qualities,
         "same_energy_S": S_values,
         "S_local_limit": bell["S_local_torsion"],
         "S_joint_limit": bell["S_joint_torsion_lrm"],
-        "S_no_torsion_link_deep_zombie": no_link_S,
-        "S_one_wing_flow_one_deep_zombie": one_flow_S,
-        "S_both_deep_zombie": both_deep_S,
+        "S_no_torsion_link": no_link_S,
+        "S_one_wing_starved": one_starved_S,
+        "S_both_links_paid": both_paid_S,
         "classical_bound": bell["classical_bound"],
         "tsirelson_bound": bell["tsirelson_bound"],
-        "gate_model": (
-            "q = 1/(1+exp(10*(max(E_A,E_B)/E_zombie - 0.60))); "
-            "S_eff blends local torsion and joint torsion CHSH values. "
-            "The higher-energy wing limits joint boundary resolution."
-        ),
+        "gate_model": "q=1 if min(A_A,A_B)>=n_A*c0, otherwise q=0.",
         "experimental_signature": (
-            "Bell violation is predicted to be gated by simultaneous deep "
-            "ZOMBIE-mode operation of both torsion-linked parties. Keeping "
-            "either wing in FLOW mode, or removing the shared torsion link, "
-            "returns the CHSH value to the Bell-classical regime."
+            "Bell violation requires both wings to pay the declared torsion "
+            "refresh cost. A starved wing or a removed shared link returns "
+            "the CHSH value to the Bell-classical regime."
         ),
         "standard_qm_contrast": (
             "Standard quantum mechanics predicts Bell correlations from the "
@@ -2029,8 +2019,8 @@ def audit_zombie_gated_bell_signature(d: DerivedConstants) -> Dict[str, Any]:
         "verdict": (
             "PASS" if (
                 no_link_S <= 2.0 + 1e-9
-                and one_flow_S <= 2.001
-                and abs(both_deep_S - bell["tsirelson_bound"]) < 0.01
+                and one_starved_S <= 2.001
+                and abs(both_paid_S - bell["tsirelson_bound"]) < 0.01
             ) else "FAIL"
         ),
     }
@@ -2065,15 +2055,15 @@ def calibrate(d: DerivedConstants, ax: Axioms) -> Dict[str, Any]:
     # gamma_max above CERN muon gamma
     gamma_above_cern = d.gamma_max > CERN_MUON_GAMMA
 
-    # ---- G_FPM precision decomposition (axiomatic audit) ------------------
+    # ---- G_FPM temperature decomposition (candidate extension) ------------
     # G_FPM scales as G ~ h / (k_B * T * N_bit_eq^5) for fixed alpha_PP,
     # L_max, c, m_e. The residual deviation from CODATA decomposes into:
-    #   (a) substrate temperature T (an operational input, not derived)
+    #   (a) equipartition temperature T (a candidate state-law output)
     #   (b) N_bit_eq rounding (now eliminated by exact integer derivation)
     #   (c) higher-order geometric corrections
     # We compute the T-value that would give an exact CODATA match, so the
     # residual is auditable rather than opaque.
-    T_for_exact_G = ax.T_substrate * d.G_FPM / G_CODATA
+    T_for_exact_G = d.T_calorimetric * d.G_FPM / G_CODATA
     # Continuous-volume approximation of N_bit_eq (for comparison only)
     N_bit_eq_continuous = (4.0 * math.pi / 3.0) * d.alpha_PP ** 3
     N_bit_eq_rounding_leak = abs(d.N_bit_eq - N_bit_eq_continuous) / N_bit_eq_continuous
@@ -2101,14 +2091,13 @@ def calibrate(d: DerivedConstants, ax: Axioms) -> Dict[str, Any]:
         "N_bit_eq_continuous_approx": N_bit_eq_continuous,
         "N_bit_eq_rounding_leak_relative": N_bit_eq_rounding_leak,
         "G_FPM_rounding_attribution_relative": G_FPM_rounding_attribution,
-        # ---- G_FPM T-decomposition audit ------------------------------------
-        # G_FPM has a 1/T dependence; the residual deviation from CODATA is
-        # attributable to T = 300 K being an operational input, not a derived
-        # constant. The T-for-exact-CODATA value quantifies this attribution.
-        "T_substrate_used_K": ax.T_substrate,
+        # ---- Candidate 9-channel equipartition audit ------------------------
+        "thermal_channel_count": d.thermal_channel_count,
+        "T_calorimetric_K": d.T_calorimetric,
+        "temperature_status": "CANDIDATE_9_CHANNEL_EQUIPARTITION_STATE_LAW",
         "T_for_exact_CODATA_match_K": T_for_exact_G,
-        "T_residual_K": T_for_exact_G - ax.T_substrate,
-        "T_residual_relative": (T_for_exact_G - ax.T_substrate) / ax.T_substrate,
+        "T_residual_K": T_for_exact_G - d.T_calorimetric,
+        "T_residual_relative": (T_for_exact_G - d.T_calorimetric) / d.T_calorimetric,
     }
 
 
@@ -2762,6 +2751,8 @@ class MasterChainTrajectory:
     mean_C_sem: List[float] = field(default_factory=list)
     mean_C_geo: List[float] = field(default_factory=list)
     mean_smooth: List[float] = field(default_factory=list)
+    mean_z_clock: List[float] = field(default_factory=list)
+    clock_advances: List[int] = field(default_factory=list)
     metabolic_mode: List[str] = field(default_factory=list)
     boundary_clip_events: int = 0
     thermal_spillover: List[float] = field(default_factory=list)
@@ -2776,6 +2767,7 @@ class MasterChainTrajectory:
     total_thermal_exhaust: float = 0.0
     total_starvation_deficit: float = 0.0
     total_landauer_debit: float = 0.0
+    total_torsion_refresh_debit: float = 0.0
     max_ledger_closure_residual: float = 0.0
     microcell_quantization_events: int = 0
     max_microcell_quantization_tv: float = 0.0
@@ -2914,6 +2906,8 @@ def run_master_chain(d: DerivedConstants,
         tick_spillover = 0.0
         tick_starvation = 0.0
         tick_landauer_debit = 0.0
+        tick_torsion_refresh_debit = 0.0
+        tick_clock_advances = 0
         site_exhaust = [0.0] * n_daemons
         site_starvation = [0.0] * n_daemons
         site_landauer = [0.0] * n_daemons
@@ -2956,6 +2950,7 @@ def run_master_chain(d: DerivedConstants,
         for i, dm in enumerate(daemons):
             # Native Born-carrier runtime update: route cost drives U(1) phase.
             dm.phase_rotate(route_cost_channels(dm, Ls[i]))
+            tick_clock_advances += dm.advance_internal_clock(d.L_rest, Ls[i])
             dm.Omega_prev = Os[i]
             # Routing tensor evolves very slowly to keep L in the safe regime
             phi = mobility(trace_curvature(dm.R), shear_aggregate(dm.R),
@@ -2996,8 +2991,21 @@ def run_master_chain(d: DerivedConstants,
                     tick_landauer_debit += debit_a + debit_b
                     site_landauer[i] += debit_a
                     site_landauer[partner_idx] += debit_b
-                    q = joint_quantize_torsion_pair(dm, partner, d)
-                    traj.joint_torsion_quantization_events += 1
+                    refresh_q = torsion_refresh_quality(dm.E, partner.E, d)
+                    if refresh_q:
+                        # The candidate postulate charges one shared c0
+                        # transaction, split symmetrically across both wings.
+                        refresh_half = 0.5 * d.c0
+                        dm.E -= refresh_half
+                        partner.E -= refresh_half
+                        tick_torsion_refresh_debit += d.c0
+                        q = joint_quantize_torsion_pair(dm, partner, d)
+                        traj.joint_torsion_quantization_events += 1
+                    else:
+                        # A starved shared link resolves each carrier locally.
+                        q_a = dm.quantize_microcells(d)
+                        q_b = partner.quantize_microcells(d)
+                        q = {"tv_distance": max(q_a["tv_distance"], q_b["tv_distance"])}
                     traj.microcell_quantization_events += 2
                     traj.max_joint_torsion_tv = max(
                         traj.max_joint_torsion_tv,
@@ -3034,11 +3042,13 @@ def run_master_chain(d: DerivedConstants,
         traj.total_thermal_exhaust += tick_exhaust
         traj.total_starvation_deficit += tick_starvation
         traj.total_landauer_debit += tick_landauer_debit
+        traj.total_torsion_refresh_debit += tick_torsion_refresh_debit
         # Finite-capacity clipping is represented explicitly: starvation is a
         # signed liability, exhaust and Landauer erasure are paid debits.
         ledger_total = (final_total_E - traj.total_starvation_deficit
                         + traj.total_thermal_exhaust
-                        + traj.total_landauer_debit)
+                        + traj.total_landauer_debit
+                        + traj.total_torsion_refresh_debit)
         traj.max_ledger_closure_residual = max(
             traj.max_ledger_closure_residual,
             abs(ledger_total - initial_total_E),
@@ -3053,6 +3063,8 @@ def run_master_chain(d: DerivedConstants,
         traj.mean_C_sem.append(float(np.mean(C_sems)))
         traj.mean_C_geo.append(float(np.mean(C_geos)))
         traj.mean_smooth.append(float(np.mean(smooths)))
+        traj.mean_z_clock.append(float(np.mean([dm.z_clock for dm in daemons])))
+        traj.clock_advances.append(tick_clock_advances)
         traj.metabolic_mode.append(
             max(set([metabolic_mode(dm.E, d.E_max) for dm in daemons]),
                 key=[metabolic_mode(dm.E, d.E_max) for dm in daemons].count)
@@ -3362,52 +3374,36 @@ def plot_all(d: DerivedConstants, axioms: Axioms,
     plt.close(fig)
     paths["bell_chsh"] = p
 
-    # 10. ZOMBIE-gated Bell signature
-    gated = audit_zombie_gated_bell_signature(d)
+    # 10. Paid torsion-refresh Bell signature
+    gated = audit_paid_torsion_bell_signature(d)
     loadings = np.array(gated["causal_loading"])
     S_vals = np.array(gated["causal_loading_CHSH"])
     q_vals = np.array(gated["causal_loading_joint_quality"])
-    thresholds = gated["causal_loading_thresholds"]
-    prohibited = gated["prohibited_zone_against_flat_QM_Tsirelson"]
     grid = np.array(gated["energy_ratio_grid"])
     S_surface = np.array(gated["S_surface"])
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.8), constrained_layout=True)
     axes[0].plot(loadings, S_vals, color="#8b0000", lw=2.4,
-                 label="FPM protocol curve")
+                 label="paid-refresh protocol")
     axes[0].axhline(gated["classical_bound"], color="#555555", ls=":",
                     label="classical bound")
     axes[0].axhline(gated["tsirelson_bound"], color="#1a4a6a", ls="--",
                     label="QM Tsirelson reference")
-    axes[0].axvspan(
-        prohibited["delta_gt_0.05_loading_min"],
-        loadings[-1],
-        color="#a83232",
-        alpha=0.08,
-        label="|QM-FPM| > 0.05",
-    )
-    for label, key, color in [
-        ("S=2.80", "S_2.80", "#2d7a4a"),
-        ("S=2.50", "S_2.50", "#c8902e"),
-        ("S=2.10", "S_2.10", "#6d3f8f"),
-    ]:
-        x = thresholds[key]
-        axes[0].axvline(x, color=color, ls=":", lw=1.0)
-        axes[0].text(x, 2.03, label, rotation=90, va="bottom",
-                     ha="right", fontsize=7, color=color)
-    axes[0].set_xscale("log")
+    axes[0].axvline(gated["conditional_baryonic_snap_threshold"],
+                    color="#c8902e", ls=":", lw=1.2, label="conditional B*")
     axes[0].set_xlim(loadings[0], loadings[-1])
     axes[0].set_ylim(1.96, 2.88)
-    axes[0].set_xlabel("causal loading L = E/E_zombie")
+    axes[0].set_xlabel("candidate baryonic load B")
     axes[0].set_ylabel("CHSH S")
     axes[0].set_title("Experimental protocol: CHSH vs causal loading")
     ax_q = axes[0].twinx()
     ax_q.plot(loadings, q_vals, color="#2d7a4a", ls="--", alpha=0.75,
-              label="joint resolution q")
-    ax_q.set_ylabel("joint resolution quality q")
+              label="paid-link gate q")
+    ax_q.set_ylabel("paid-link gate q")
     ax_q.set_ylim(-0.03, 1.03)
     axes[0].legend(loc="lower left", fontsize=7)
     ax_q.legend(loc="upper right", fontsize=7)
 
+    affordability_ratio = gated["maintenance_cost"] / gated["reference_available_action"]
     im = axes[1].imshow(
         S_surface,
         extent=[grid[0], grid[-1], grid[-1], grid[0]],
@@ -3416,16 +3412,18 @@ def plot_all(d: DerivedConstants, axioms: Axioms,
         cmap="viridis",
         aspect="auto",
     )
-    axes[1].axvline(1.0, color="white", ls=":", lw=1.0)
-    axes[1].axhline(1.0, color="white", ls=":", lw=1.0)
-    axes[1].set_xlabel("wing B energy ratio E_B/E_zombie")
-    axes[1].set_ylabel("wing A energy ratio E_A/E_zombie")
-    axes[1].set_title("Two-wing gate surface: S(E_A, E_B)")
+    axes[1].axvline(affordability_ratio, color="white", ls=":", lw=1.2,
+                    label=f"paid-link threshold = {affordability_ratio:.2f}")
+    axes[1].axhline(affordability_ratio, color="white", ls=":", lw=1.2)
+    axes[1].set_xlabel("wing B available-action ratio A_B/A0")
+    axes[1].set_ylabel("wing A available-action ratio A_A/A0")
+    axes[1].set_title("Two-wing paid-link surface: S(A_A, A_B)")
+    axes[1].legend(loc="upper right", fontsize=7)
     fig.colorbar(im, ax=axes[1], label="CHSH S")
-    p = os.path.join(out_dir, "fpm_zombie_gated_bell.png")
+    p = os.path.join(out_dir, "fpm_paid_torsion_bell.png")
     fig.savefig(p, dpi=140)
     plt.close(fig)
-    paths["zombie_gated_bell"] = p
+    paths["paid_torsion_bell"] = p
 
     # 11. Fine-structure bare coupling (Torsion Snap)
     fs = fine_structure_bare_coupling(d)
@@ -3503,7 +3501,7 @@ def main() -> None:
           f"-> n_directed={axioms.n_directed}, n_trace={axioms.n_trace}")
     print()
 
-    print("Layer 1: Deriving all 22 constants from the 5 axioms...")
+    print("Layer 1: Deriving foundational constants and labelled candidate-extension outputs...")
     d = derive_all(axioms)
     print(f"  alpha      = {d.alpha:.6f}        (paper: 0.2)")
     print(f"  beta       = {d.beta:.6f}        (paper: 1.8)")
@@ -3574,7 +3572,7 @@ def main() -> None:
         route_costs=route_cost_channels(sample, L_for_born),
     )
     b_bell = audit_joint_torsion_bell_bridge(d)
-    b_gated = audit_zombie_gated_bell_signature(d)
+    b_gated = audit_paid_torsion_bell_signature(d)
     b_fine = fine_structure_bare_coupling(d)
     print(f"  Lindblad:   kappa={b_lind['kappa']:.4f}, "
           f"gamma={b_lind['gamma_dephasing']:.4e}")
@@ -3600,9 +3598,9 @@ def main() -> None:
     print(f"  Bell/CHSH:  S_local={b_bell['S_local_torsion']:.6f}, "
           f"S_joint={b_bell['S_joint_torsion_lrm']:.6f}, "
           f"Tsirelson={b_bell['tsirelson_bound']:.6f}")
-    print(f"  Gated Bell: S_no_link={b_gated['S_no_torsion_link_deep_zombie']:.6f}, "
-          f"S_one_flow={b_gated['S_one_wing_flow_one_deep_zombie']:.6f}, "
-          f"S_deep={b_gated['S_both_deep_zombie']:.6f}")
+    print(f"  Paid Bell:  S_no_link={b_gated['S_no_torsion_link']:.6f}, "
+          f"S_starved={b_gated['S_one_wing_starved']:.6f}, "
+          f"S_paid={b_gated['S_both_links_paid']:.6f}")
     print(f"  Fine struct: 1/alpha_bare={b_fine['one_over_alpha_bare']:.6f}, "
           f"macro CODATA={b_fine['CODATA_macroscopic_screened_inv']:.6f}, "
           f"verdict={b_fine['verdict']}")
@@ -3626,12 +3624,12 @@ def main() -> None:
     print(f"  G_FPM rounding attribution (5x N_leak, relative)  : {cal['G_FPM_rounding_attribution_relative']*100:.6f}%")
     print(f"     -> N_bit_eq rounding is now ZERO by construction.")
     print()
-    print("  ---- G_FPM T-decomposition audit ----------------------------------")
-    print(f"  Substrate temperature T used in G_FPM derivation  : {cal['T_substrate_used_K']:.3f} K (operational input)")
+    print("  ---- Candidate 9-channel equipartition audit ----------------------")
+    print(f"  Thermal channel count                             : {cal['thermal_channel_count']}")
+    print(f"  Equipartition temperature used in G_FPM           : {cal['T_calorimetric_K']:.3f} K")
     print(f"  T that would give exact CODATA match              : {cal['T_for_exact_CODATA_match_K']:.4f} K")
     print(f"  T residual                                         : {cal['T_residual_K']:+.4f} K ({cal['T_residual_relative']*100:+.4f}%)")
-    print(f"     -> Residual G_FPM deviation is fully attributable to the")
-    print(f"        T = 300 K operational input, NOT to N_bit_eq rounding.")
+    print(f"     -> This result is conditional on the calorimetric state-law extension.")
     print()
 
     validation_suite = "16 primary experiments plus 1 starvation subtest (8b)"
@@ -3669,11 +3667,11 @@ def main() -> None:
     print(f"  Metabolic modes seen:        {sorted(set(traj.metabolic_mode))}")
     print()
 
-    print("Layer 10: Auditing proposed experimental signature...")
-    print(f"  ZOMBIE-gated Bell verdict:     {b_gated['verdict']}")
-    print(f"  S(no link, deep ZOMBIE):       {b_gated['S_no_torsion_link_deep_zombie']:.6f}")
-    print(f"  S(one FLOW, one deep):         {b_gated['S_one_wing_flow_one_deep_zombie']:.6f}")
-    print(f"  S(both deep ZOMBIE):           {b_gated['S_both_deep_zombie']:.6f}")
+    print("Layer 10: Auditing candidate paid-torsion signature...")
+    print(f"  Paid torsion-refresh verdict:  {b_gated['verdict']}")
+    print(f"  S(no link):                    {b_gated['S_no_torsion_link']:.6f}")
+    print(f"  S(one wing starved):           {b_gated['S_one_wing_starved']:.6f}")
+    print(f"  S(both links paid):            {b_gated['S_both_links_paid']:.6f}")
     print()
 
     print("Generating visualisation PNGs...")
@@ -3726,7 +3724,7 @@ def main() -> None:
             },
             "born_distribution": to_serialisable(b_born),
             "joint_torsion_bell_chsh": to_serialisable(b_bell),
-            "zombie_gated_bell_signature": to_serialisable(b_gated),
+            "paid_torsion_bell_signature": to_serialisable(b_gated),
             "fine_structure_bare_coupling": to_serialisable(b_fine),
             "local_energy_continuity": to_serialisable(local_bridge_audit),
         },
@@ -3747,6 +3745,8 @@ def main() -> None:
             "mean_C_sem": traj.mean_C_sem,
             "mean_C_geo": traj.mean_C_geo,
             "mean_smooth": traj.mean_smooth,
+            "mean_z_clock": traj.mean_z_clock,
+            "clock_advances": traj.clock_advances,
             "metabolic_mode": traj.metabolic_mode,
             "boundary_clip_events": traj.boundary_clip_events,
             "thermal_spillover": traj.thermal_spillover,
@@ -3761,6 +3761,7 @@ def main() -> None:
             "total_thermal_exhaust": traj.total_thermal_exhaust,
             "total_starvation_deficit": traj.total_starvation_deficit,
             "total_landauer_debit": traj.total_landauer_debit,
+            "total_torsion_refresh_debit": traj.total_torsion_refresh_debit,
             "max_ledger_closure_residual": traj.max_ledger_closure_residual,
             "microcell_quantization_events": traj.microcell_quantization_events,
             "max_microcell_quantization_tv": traj.max_microcell_quantization_tv,
@@ -3778,7 +3779,7 @@ def main() -> None:
     print(f"Results JSON saved to: {out_json}")
     print()
     print("FPM simulation complete.")
-    print("Master chain equation (every arrow is derived, none postulated):")
+    print("Master chain equation (foundational arrows plus labelled candidate extensions):")
     print("  substrate R_ij -> (S_9, K_1) -> Phi_Omega -> psi_t -> p_t=|psi_t|^2")
     print("    -> ZOMBIE microcell quantization when starvation forces exchangeability")
     print("    -> (H_N, S_N)")
@@ -3789,7 +3790,7 @@ def main() -> None:
     print("    -> psi_{i,t+1}=psi_{i,t} exp(-i theta L_{i,t})")
     print("    -> (D_{t+1}, p_{t+1}, b_{t+1})")
     print("    -> {Lindblad, Landauer, Gravity, Time, CMB, Born, Bell/CHSH, alpha_bare} bridges")
-    print("    -> falsification target: ZOMBIE-gated Bell violation")
+    print("    -> candidate falsification target: paid torsion-refresh Bell transition")
     print()
     print("Closure: the universe becomes solid, directional, heavy,")
     print("time-slowed, structured, and stable for one basic reason:")

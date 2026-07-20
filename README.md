@@ -116,14 +116,14 @@ python scripts/generate_fpm_complete.py      # Regenerates the PDF (12 figures t
 - §23 Bridge 5: CMB (16/3 ratio, A_FPM, n_s, r, ℓ_D **all derived inline**)
 - §23.7 Bridge 6: Born-compatible distribution bridge
 - §23.8 Bridge 7: Joint torsion Bell/CHSH bridge (**rotated torsion-flux audit, S = 2.828427**)
-- §23.9 Proposed experimental signature: ZOMBIE-gated Bell violation
+- §23.9 Candidate experimental signature: paid torsion-refresh Bell gate
 - §23.10 Bridge 8: Fine-structure bare coupling (Torsion Snap, **1/α_bare ≈ 136.795**)
 
-**Locality clarification:** The Bell/CHSH bridge is not a local-hidden-variable model. Bell correlations force a tradeoff: standard quantum mechanics gives up classical realism, while FPM keeps definite discrete daemon states and bounded memory, so it gives up Bell locality. It uses explicit topological non-local links: pure-gauge torsion boundaries with zero geometric cost. Joint LRM quantization resolves statistics across those shared boundaries when linked daemons enter ZOMBIE mode.
+**Locality clarification:** The Bell/CHSH bridge is not a local-hidden-variable model. It uses explicit topological non-local links: pure-gauge torsion boundaries with zero stored geometric cost. The candidate paid-refresh extension adds a maintenance transaction; joint LRM quantization applies only while both linked wings can pay it.
 
 ### Part VII: Calibration & G_FPM (with full derivation inline)
 - §24 Derivation of the Universal Engine Tick
-- §25 Derivation of G_FPM (8-step derivation, 0.09% from CODATA at T=300.0 K)
+- §25 Candidate calorimetric gravity bridge (2.01% from CODATA using the nine-channel state-law extension)
 - §26 Derivation of the AxCore-to-FPM Calibration Factor = 80
 
 ### Part VIII: Numerical Validation
@@ -194,13 +194,13 @@ All 10 derivation checks plus the local continuity bridge audit pass:
 | A4 | Discrete causal ticks (irreversible order) |
 | A5 | Calibration (max propagation = c) |
 
-**No further postulates appear anywhere in the paper.**
+**Candidate extensions are declared separately from Axioms A1-A5.**
 
 ## The Deepest Result
 
-The FPM framework is a fully axiomatic system. Its ledger has an exact nearest-neighbor continuity law, a finite support cone, and a frozen-weight equilibrium that recovers the globally normalized formula without treating it as instantaneous transport. Every observable prediction is a theorem of the five axioms or a bridge evaluation with explicit environmental inputs. The Born-compatible bridge, joint torsion Bell/CHSH audit, ZOMBIE-gated Bell signature, and Torsion Snap bare fine-structure coupling now provide candidate finite-substrate measurement tests: the Bell angle dependence is computed from SO(3) rotation of a shared pure-gauge torsion link before exact LRM microcell allocation, and the violation is predicted to require simultaneous deep low-energy operation of both linked wings. This remains an explicitly topological/non-local bridge result pending independent physical validation, not a locally mediated Bell violation. In short: FPM is a non-local realist topology that represents Tsirelson-level correlations with linear memory instead of exponential tensor-product storage. The bare fine-structure coupling 1/α_bare ≈ 136.795 at the grid UV cutoff is stronger than the laboratory 1/137.036, predicting vacuum polarization and a finite Landau-pole cutoff. The framework's empirical engagements (SPARC, Planck, CODATA, Bell gating, α_bare) are genuine tests of the axioms, not fits to data.
+The FPM framework defines a finite directed ledger with nearest-neighbor continuity, finite support, and a frozen-weight equilibrium. Its public artifact distinguishes axiomatic results, runtime checks, calibrations, bridge evaluations, and candidate extensions. The joint torsion Bell/CHSH audit is explicitly non-local; the paid torsion-refresh gate is a candidate extension that produces a conditional transition between the joint and local CHSH limits. The candidate nine-channel calorimetric state law supplies a Kelvin scale for the gravity bridge but is not selected by Axioms A1-A5 alone. The bare fine-structure coupling remains a model output at the declared grid cutoff; any physical interpretation requires a registered measurement protocol.
 
-**The 0.09% deterministic match to CODATA G at T=300.0 K, the 0.45% match to Planck dark-to-baryonic ratio, and the 0.54% match to Planck TT RMS are all derived predictions, not fitted parameters.**
+**The candidate nine-channel calorimetric state law gives G_FPM = 6.5399×10⁻¹¹ m³ kg⁻¹ s⁻², 2.0137% below CODATA. This discrepancy is unresolved; no screening correction is inferred.**
 
 ---
 
