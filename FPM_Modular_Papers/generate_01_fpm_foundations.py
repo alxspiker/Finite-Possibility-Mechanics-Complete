@@ -359,6 +359,47 @@ def manuscript(styles):
             "Detailed balance immediately yields stationarity: P<sub>t</sub><super>T</super>&rho;<sub>t</sub><super>eq</super>=&rho;<sub>t</sub><super>eq</super>. The normalized vector &rho;<sub>t</sub><super>eq</super> is an observer-level description of the frozen kernel's equilibrium; computing it is not part of the local one-tick transport update.",
             styles,
         ),
+        h2("5.3 Exact homogeneous cubic spectrum", styles),
+        body(
+            "Fix a periodic cubic lattice of side n, constant activity w<sub>i</sub>=w<sub>0</sub>, and constant viscosity &Omega;<sub>i</sub>=&Omega;<sub>0</sub>. Write &mu;=1-&Omega;<sub>0</sub>. The transport operator is then translation invariant and symmetric:",
+            styles,
+        ),
+        equation("(PL)<sub>x</sub>=(1-&mu;)L<sub>x</sub>+(&mu;/6)&Sigma;<sub>|e|=1</sub>L<sub>x+e</sub>", styles),
+        statement(
+            "Homogeneous-spectrum theorem",
+            "For k<sub>a</sub>=2&pi;m<sub>a</sub>/(n&Delta;x), m<sub>a</sub> in {0,...,n-1}, every Fourier character exp(i k dot x) is an exact eigenvector with multiplier &lambda;(k)=1-&mu;+(&mu;/3)[cos(k<sub>x</sub>&Delta;x)+cos(k<sub>y</sub>&Delta;x)+cos(k<sub>z</sub>&Delta;x)].",
+            styles,
+        ),
+        body(
+            "Proof. Translation by &plusmn;&Delta;x along axis a multiplies a Fourier character by exp(&plusmn;ik<sub>a</sub>&Delta;x). Pairing the two neighbours gives 2cos(k<sub>a</sub>&Delta;x), and substitution in the six-neighbour rule gives the stated multiplier. The characters form the complete Fourier basis of the finite periodic lattice. QED.",
+            styles,
+        ),
+        equation("gap=(&mu;/3)[1-cos(2&pi;/n)]=(2&mu;/3)sin<sup>2</sup>(&pi;/n)", styles),
+        body(
+            "The exact finite-grid minimum is &lambda;<sub>min</sub>=1-2&mu; for even n and &lambda;<sub>min</sub>=1-&mu;[1+cos(&pi;/n)] for odd n. Hence all multipliers are nonnegative exactly when &mu;&le;1/2 on an even grid and &mu;&le;1/[1+cos(&pi;/n)] on an odd grid. The FPM viscosity domain 0.50&le;&Omega;<sub>0</sub>&le;0.85, equivalently 0.15&le;&mu;&le;0.50, is a grid-independent sufficient condition. In that domain every nonconstant Fourier mode is damped without sign alternation.",
+            styles,
+        ),
+        body(
+            "For zero-mean f, ||P<sup>t</sup>f||<sub>2</sub>&le;&rho;<sup>t</sup>||f||<sub>2</sub>, where &rho;=max<sub>k&ne;0</sub>|&lambda;(k)|; in the monotone FPM domain &rho;=&lambda;<sub>1</sub>=1-gap. For a point-mass initial distribution on N=n<sup>3</sup> sites, TV(P<sup>t</sup>&delta;<sub>x</sub>,uniform)&le;sqrt(N-1)&rho;<sup>t</sup>/2. This provides an explicit total-variation mixing-time bound.",
+            styles,
+        ),
+        body(
+            "For every nonconstant mode with &lambda;(k)&ne;0, its exact envelope damping rate is &gamma;<sub>k</sub>=-ln|&lambda;(k)|/&Delta;t. A zero multiplier is annihilated in one tick; a negative multiplier has the same envelope rate and alternates sign. In the declared FPM domain all multipliers are nonnegative, so the slowest nonconstant rate is -ln(&rho;)/&Delta;t, the constant-mode rate is zero, and the fastest finite positive-mode rate is -ln(min<sub>&lambda;&gt;0</sub>&lambda;)/&Delta;t.",
+            styles,
+        ),
+        body(
+            "Let u be a passively transported scalar, u<sup>t+1</sup>=Pu<sup>t</sup>. At long wavelength, &lambda;(k)=1-(&mu;&Delta;x<sup>2</sup>/6)|k|<sup>2</sup>+(&mu;&Delta;x<sup>4</sup>/72)&Sigma;<sub>a</sub>k<sub>a</sub><sup>4</sup>+O((k&Delta;x)<sup>6</sup>). For a fixed periodic physical torus of side length &ell;, take &Delta;x=&ell;/n and &Delta;t=&mu;&Delta;x<sup>2</sup>/(6D). For each fixed Fourier wavevector k, &lambda;<sub>&Delta;x</sub>(k)<sup>floor(t/&Delta;t)</sup>&rarr;exp(-D|k|<sup>2</sup>t). For spectrally projected periodic H<sup>s</sup> initial data with s&gt;0, Parseval controls the finite set of retained modes and the H<sup>s</sup> tail uniformly; Fourier truncation therefore gives L<sup>2</sup> convergence of the frozen transport semigroup to &part;<sub>t</sub>u=D&nabla;<sup>2</sup>u on every bounded time interval. The selected A5 length/time values instead give a fixed-scale coefficient D=&mu;&Delta;x<sup>2</sup>/(6&Delta;t); they do not by themselves establish a refinement limit for the runtime route-cost trajectory.",
+            styles,
+        ),
+        body(
+            "The fourth-order term is the leading cubic-grid anisotropy. An exact finite-grid shell comparison uses n=7 and the equal-|m|<sup>2</sup>=9 modes (3,0,0) and (2,2,1); their distinct fourth moments split their exact multipliers. The corresponding power ratio after t ticks is [&lambda;<sub>300</sub>/&lambda;<sub>221</sub>]<sup>2t</sup>. This is an exact shell splitting, rather than a comparison of directions unavailable on the same finite torus.",
+            styles,
+        ),
+        statement(
+            "Scope boundary",
+            "This diagonal Fourier result and its continuum statement apply to a repeatedly transported scalar under the frozen homogeneous kernel only. In the full reference runtime, route cost is recalculated from state and the kernel has state-dependent activity and viscosity; it remains local and conservative but is not translation invariant tick by tick.",
+            styles,
+        ),
     ]
 
     s += [

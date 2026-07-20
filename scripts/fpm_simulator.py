@@ -1236,6 +1236,211 @@ def theorem6_lattice_anisotropy_decay(d: DerivedConstants,
     }
 
 
+def homogeneous_cubic_fourier_spectrum(side: int, mu: float) -> Dict[str, Any]:
+    """Exact Fourier spectrum of the frozen homogeneous cubic kernel.
+
+    For ``w_i=w_0`` and ``Omega_i=Omega_0`` the six-neighbour kernel is
+
+        (P L)_x = (1-mu)L_x + mu/6 sum_{|e|=1} L_{x+e},  mu=1-Omega_0.
+
+    On ``(Z/side Z)^3``, Fourier characters labelled by integer triples m are
+    eigenvectors.  This function returns their exact finite-grid multipliers;
+    it makes no continuum approximation.
+    """
+    if side < 3:
+        raise ValueError("side must be at least three")
+    # This audit is deliberately restricted to the declared FPM viscosity
+    # domain Omega in [0.50, 0.85], i.e. mu in [0.15, 0.50].  That domain is
+    # enough for the exact theorem and guarantees monotone (non-oscillatory)
+    # damping on every periodic cubic grid.  The closed-form formula below
+    # still records the sharper grid-dependent positivity threshold.
+    if not (0.0 < mu <= 0.5):
+        raise ValueError("the FPM homogeneous-spectrum audit requires 0 < mu <= 1/2")
+    modes = np.arange(side, dtype=float)
+    phases = 2.0 * np.pi * modes / side
+    mx, my, mz = np.meshgrid(modes, modes, modes, indexing="ij")
+    px, py, pz = np.meshgrid(phases, phases, phases, indexing="ij")
+    eigenvalues = 1.0 - mu + (mu / 3.0) * (np.cos(px) + np.cos(py) + np.cos(pz))
+    mode_triples = np.column_stack((mx.ravel(), my.ravel(), mz.ravel())).astype(int)
+    flat = eigenvalues.ravel()
+    nonconstant = np.any(mode_triples != 0, axis=1)
+    largest_nonconstant = float(np.max(flat[nonconstant]))
+    spectral_envelope = float(np.max(np.abs(flat[nonconstant])))
+    spectral_gap = 1.0 - largest_nonconstant
+    exact_gap = (mu / 3.0) * (1.0 - math.cos(2.0 * math.pi / side))
+    cosine_minimum = -1.0 if side % 2 == 0 else -math.cos(math.pi / side)
+    lambda_minimum_formula = 1.0 - mu + mu * cosine_minimum
+    nonnegative_mu_ceiling = 1.0 / (1.0 - cosine_minimum)
+    return {
+        "side": side,
+        "node_count": side ** 3,
+        "mu": mu,
+        "omega": 1.0 - mu,
+        "mode_triples": mode_triples.tolist(),
+        "eigenvalues": flat.tolist(),
+        "lambda_min": float(np.min(flat)),
+        "lambda_min_formula": lambda_minimum_formula,
+        "lambda_min_residual": abs(float(np.min(flat)) - lambda_minimum_formula),
+        "cosine_minimum": cosine_minimum,
+        "nonnegative_mu_ceiling": nonnegative_mu_ceiling,
+        "lambda_max": float(np.max(flat)),
+        "largest_nonconstant_multiplier": largest_nonconstant,
+        "absolute_nonconstant_spectral_envelope": spectral_envelope,
+        "spectral_gap": spectral_gap,
+        "spectral_gap_formula": exact_gap,
+        "spectral_gap_residual": abs(spectral_gap - exact_gap),
+        "all_multipliers_nonnegative": bool(np.min(flat) >= -1e-14),
+    }
+
+
+def theorem7_homogeneous_replenishment_spectrum(d: DerivedConstants,
+                                                 side: int = 5,
+                                                 mu: float = 0.35) -> Dict[str, Any]:
+    """Theorem 7: spectrum, mixing, damping, anisotropy, and continuum limit.
+
+    This theorem applies only to the frozen homogeneous kernel.  The live FPM
+    kernel remains local and conservative but has state-dependent weights and
+    viscosities, so it is not translation invariant and does not share this
+    diagonal Fourier representation tick by tick.
+    """
+    spec = homogeneous_cubic_fourier_spectrum(side, mu)
+    n = side ** 3
+    neighbours = periodic_cubic_neighbour_map(side)
+    P = local_replenishment_kernel(
+        np.ones(n, dtype=float), np.full(n, 1.0 - mu, dtype=float), neighbours
+    )
+    numeric = np.linalg.eigvalsh(P)
+    analytic = np.sort(np.asarray(spec["eigenvalues"], dtype=float))
+    eigenvalue_residual = float(np.max(np.abs(np.sort(numeric) - analytic)))
+
+    # Test every claimed Fourier character directly, not merely the sorted
+    # eigenvalue multiset.  The row ordering is x-major, then y, then z.
+    direct_fourier_residual = 0.0
+    for mx, my, mz in spec["mode_triples"]:
+        character = np.empty(n, dtype=complex)
+        for x in range(side):
+            for y in range(side):
+                for z in range(side):
+                    index = (x * side + y) * side + z
+                    character[index] = np.exp(
+                        2j * math.pi * (mx * x + my * y + mz * z) / side
+                    ) / math.sqrt(n)
+        multiplier = 1.0 - mu + (mu / 3.0) * (
+            math.cos(2.0 * math.pi * mx / side)
+            + math.cos(2.0 * math.pi * my / side)
+            + math.cos(2.0 * math.pi * mz / side)
+        )
+        direct_fourier_residual = max(
+            direct_fourier_residual,
+            float(np.linalg.norm(P @ character - multiplier * character)),
+        )
+
+    # On the zero-mean subspace the exact L2 operator norm is the largest
+    # modulus of a nonconstant multiplier.  Verify it directly from P-J/N.
+    centering = P - np.ones((n, n), dtype=float) / n
+    zero_mean_operator_norm = float(np.linalg.svd(centering, compute_uv=False)[0])
+    spectral_envelope = spec["absolute_nonconstant_spectral_envelope"]
+    mixing_norm_residual = abs(zero_mean_operator_norm - spectral_envelope)
+    tv_epsilon = 0.01
+    tv_bound_prefactor = 0.5 * math.sqrt(n - 1)
+    tv_mixing_time_bound = int(math.ceil(
+        math.log(tv_bound_prefactor / tv_epsilon) / -math.log(spectral_envelope)
+    ))
+
+    # The exact long-wavelength symbol gives D=mu dx^2/(6 dt).  Compare the
+    # first axial finite-grid multiplier with exp(-D k^2 dt), retaining the
+    # known O((ka)^4) lattice correction rather than calling it an exact PDE.
+    k_a = 2.0 * math.pi / side
+    lambda_axis = 1.0 - (mu / 3.0) * (1.0 - math.cos(k_a))
+    diffusion_coefficient = mu * d.dx_univ ** 2 / (6.0 * d.dt_univ)
+    continuum_multiplier = math.exp(-diffusion_coefficient * (k_a / d.dx_univ) ** 2 * d.dt_univ)
+
+    # A real finite-grid shell splitting: on the 7-torus the signed integer
+    # modes (3,0,0) and (2,2,1) both have |m|^2=9 but different fourth moments.
+    shell_side = 7
+    shell_axis = (3, 0, 0)
+    shell_mixed = (2, 2, 1)
+    shell_q = 2.0 * math.pi / shell_side
+    shell_lambda = lambda m: 1.0 - mu + (mu / 3.0) * sum(
+        math.cos(shell_q * component) for component in m
+    )
+    shell_lambda_axis = shell_lambda(shell_axis)
+    shell_lambda_mixed = shell_lambda(shell_mixed)
+    shell_ticks = 10
+    shell_power_ratio = (shell_lambda_axis / shell_lambda_mixed) ** (2 * shell_ticks)
+    shell_fourth_difference = sum(component ** 4 for component in shell_axis) - sum(
+        component ** 4 for component in shell_mixed
+    )
+    shell_log_power_leading = (
+        shell_ticks * mu * shell_fourth_difference * shell_q ** 4 / 36.0
+    )
+
+    nonconstant_multipliers = np.asarray(spec["eigenvalues"], dtype=float)[
+        np.any(np.asarray(spec["mode_triples"], dtype=int) != 0, axis=1)
+    ]
+    positive_nonconstant = nonconstant_multipliers[nonconstant_multipliers > 1e-14]
+    has_one_tick_annihilation = bool(np.any(np.abs(nonconstant_multipliers) <= 1e-14))
+    has_sign_alternation = bool(np.any(nonconstant_multipliers < -1e-14))
+    return {
+        "theorem_name": "Homogeneous periodic-cubic replenishment spectrum",
+        "scope": "FROZEN_HOMOGENEOUS_KERNEL_ONLY",
+        "operator": "(P L)_x=(1-mu)L_x+(mu/6)sum_|e|=1 L_(x+e)",
+        "fourier_symbol": "lambda(k)=1-mu+(mu/3)[cos(k_x dx)+cos(k_y dx)+cos(k_z dx)]",
+        "allowed_modes": "k_a=2*pi*m_a/(side*dx), m_a in {0,...,side-1}",
+        "spectrum": spec,
+        "numeric_eigenvalue_residual": eigenvalue_residual,
+        "direct_fourier_character_residual": direct_fourier_residual,
+        "mixing": {
+            "l2_bound": "||P^t f||_2 <= rho^t ||f||_2 for sum(f)=0, rho=max_{k != 0}|lambda(k)|",
+            "zero_mean_operator_norm": zero_mean_operator_norm,
+            "spectral_envelope": spectral_envelope,
+            "operator_norm_residual": mixing_norm_residual,
+            "worst_case_total_variation_bound": "TV(P^t delta_x, uniform) <= sqrt(N-1) rho^t / 2",
+            "tv_epsilon": tv_epsilon,
+            "tv_mixing_time_upper_bound_ticks": tv_mixing_time_bound,
+            "bound_holds": mixing_norm_residual < 1e-12,
+        },
+        "damping": {
+            "exact_envelope_rate": "gamma(k)=-ln(|lambda(k)|)/dt for lambda(k) != 0; lambda=0 is annihilated in one tick; negative lambda alternates sign",
+            "constant_mode_rate_per_s": 0.0,
+            "slowest_nonconstant_envelope_rate_per_s": -math.log(spectral_envelope) / d.dt_univ,
+            "fastest_positive_nonconstant_rate_per_s": -math.log(
+                float(np.min(positive_nonconstant))
+            ) / d.dt_univ,
+            "one_tick_annihilation": has_one_tick_annihilation,
+            "sign_alternation": has_sign_alternation,
+        },
+        "continuum_limit": {
+            "long_wave_expansion": "lambda(k)=1-(mu dx^2/6)|k|^2+(mu dx^4/72)sum_a k_a^4+O((k dx)^6)",
+            "diffusion_equation": "partial_t u=D Laplacian u for the passive scalar u^(t+1)=P u^t",
+            "convergence_statement": "On a fixed periodic physical torus with dx=L/side and dt=mu dx^2/(6D), each fixed Fourier mode obeys lambda_dx(k)^floor(t/dt) -> exp(-D|k|^2 t); for spectrally projected periodic H^s initial data (s>0), Parseval plus Fourier truncation gives L2 convergence.",
+            "D_m2_s": diffusion_coefficient,
+            "first_axial_mode_lambda_exact": lambda_axis,
+            "first_axial_mode_lambda_diffusion": continuum_multiplier,
+            "first_axial_mode_difference": lambda_axis - continuum_multiplier,
+        },
+        "finite_grid_shell_anisotropy": {
+            "side": shell_side,
+            "axis_mode": shell_axis,
+            "mixed_mode": shell_mixed,
+            "equal_squared_mode_norm": sum(component ** 2 for component in shell_axis),
+            "axis_lambda": shell_lambda_axis,
+            "mixed_lambda": shell_lambda_mixed,
+            "ticks": shell_ticks,
+            "power_ratio_after_ticks": shell_power_ratio,
+            "leading_log_power_ratio": "t*mu*(sum_a m_axis,a^4-sum_a m_mixed,a^4)*(2*pi/n)^4/36+O((2*pi|m|/n)^6)",
+            "leading_log_power_ratio_at_ticks": shell_log_power_leading,
+        },
+        "verdict": "PASS" if (
+            eigenvalue_residual < 1e-12
+            and direct_fourier_residual < 1e-12
+            and spec["spectral_gap_residual"] < 1e-12
+            and spec["lambda_min_residual"] < 1e-12
+            and mixing_norm_residual < 1e-12
+        ) else "FAIL",
+    }
+
+
 # =============================================================================
 # LAYER 6 -- FIVE PHYSICAL BRIDGES
 # =============================================================================
@@ -2813,6 +3018,18 @@ def experiment_16_local_replenishment_bridge(d: DerivedConstants) -> Dict[str, A
     }
 
 
+def experiment_17_homogeneous_replenishment_spectrum(d: DerivedConstants) -> Dict[str, Any]:
+    """Verify the exact finite Fourier spectrum of the frozen homogeneous kernel."""
+    result = theorem7_homogeneous_replenishment_spectrum(d, side=5, mu=0.35)
+    return {
+        "name": "Homogeneous replenishment spectrum",
+        "key_metric": "max analytic-vs-numeric eigenvalue residual",
+        "value": result["numeric_eigenvalue_residual"],
+        "verdict": result["verdict"],
+        "details": result,
+    }
+
+
 def run_all_experiments(d: DerivedConstants) -> List[Dict[str, Any]]:
     return [
         experiment_01_dispersion_contraction(d),
@@ -2832,6 +3049,7 @@ def run_all_experiments(d: DerivedConstants) -> List[Dict[str, Any]]:
         experiment_14_runtime_torsion_link_quantization(d),
         experiment_15_fine_structure_bare_coupling(d),
         experiment_16_local_replenishment_bridge(d),
+        experiment_17_homogeneous_replenishment_spectrum(d),
     ]
 
 
@@ -3644,6 +3862,7 @@ def main() -> None:
     th4 = theorem4_zero_drag_loop(d)
     th5 = theorem5_alpha_pp_convergence(d)
     th6 = theorem6_lattice_anisotropy_decay(d)
+    th7 = theorem7_homogeneous_replenishment_spectrum(d)
     print(f"  T1 dispersion contraction: D*={th1['D_star']:.6e}, "
           f"violations={th1['violations']}/{th1['n_total']}")
     print(f"  T2 order sensitivity:      differ={th2['differ']}")
@@ -3651,6 +3870,7 @@ def main() -> None:
     print(f"  T4 zero-drag loop:          is_minimum_action={th4['is_minimum_action']}")
     print(f"  T5 alpha_PP convergence:    residual={th5['residual_relative']:.2e}")
     print(f"  T6 lattice anisotropy:      A4_zero_mean={th6['A4_zero_mean']}")
+    print(f"  T7 homogeneous spectrum:    Fourier residual={th7['direct_fourier_character_residual']:.2e}")
     print()
 
     print("Layer 6: Building the eight physical bridges...")
@@ -3739,7 +3959,7 @@ def main() -> None:
     print(f"     -> This result is conditional on the calorimetric state-law extension.")
     print()
 
-    validation_suite = "16 primary experiments plus 1 starvation subtest (8b)"
+    validation_suite = "17 primary experiments plus 1 starvation subtest (8b)"
     print(f"Layer 8: Running validation suite: {validation_suite}...")
     experiments = run_all_experiments(d)
     for e in experiments:
@@ -3809,6 +4029,7 @@ def main() -> None:
             "T4_zero_drag_loop": to_serialisable(th4),
             "T5_alpha_PP_convergence": to_serialisable(th5),
             "T6_lattice_anisotropy_decay": to_serialisable(th6),
+            "T7_homogeneous_replenishment_spectrum": to_serialisable(th7),
         },
         "bridges": {
             "lindblad": to_serialisable(b_lind),
