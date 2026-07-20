@@ -1,0 +1,145 @@
+{
+  "protocol_name": "Candidate Muon-Lag Extension feasibility audit",
+  "status": "NO_PUBLIC_HIGH_GAMMA_DECAY_LIFETIME_DATA",
+  "download_policy": "Reference PDFs are downloaded to a temporary directory and deleted after this run.",
+  "frozen_model": {
+    "motion_dictionary": "L(v_lab)=min[L_rest*gamma_kin(v_lab), L_max]",
+    "fpm_curve": "tau_FPM=tau_mu*min(gamma_kin, gamma_cap)",
+    "sr_baseline": "tau_SR=tau_mu*gamma_kin",
+    "gamma_cap": 31.873862947240752,
+    "rest_lifetime_s": 2.1969811e-06,
+    "muon_mass_MeV_c2": 105.6583755,
+    "cap_beta": 0.9995077253050039,
+    "cap_momentum_GeV_c": 3.366082726448296,
+    "cap_lifetime_us": 70.02627447907822
+  },
+  "gamma_bins": [
+    {
+      "gamma_kin": 20.0,
+      "beta": 0.998749217771909,
+      "momentum_GeV_c": 2.1105243976335126,
+      "tau_FPM_us": 43.93962199999999,
+      "tau_SR_us": 43.93962199999999,
+      "difference_us": 0.0,
+      "direct_flight_length_FPM_km": 13.172767282970876,
+      "direct_flight_length_SR_km": 13.172767282970876,
+      "maximum_systematic_us_for_one_fifth_gap": 0.0,
+      "ideal_events_for_5sigma_if_SR_true": null
+    },
+    {
+      "gamma_kin": 29.3,
+      "beta": 0.9994174123293735,
+      "momentum_GeV_c": 3.093986832830864,
+      "tau_FPM_us": 64.37154623,
+      "tau_SR_us": 64.37154623,
+      "difference_us": 0.0,
+      "direct_flight_length_FPM_km": 19.298104069552334,
+      "direct_flight_length_SR_km": 19.298104069552334,
+      "maximum_systematic_us_for_one_fifth_gap": 0.0,
+      "ideal_events_for_5sigma_if_SR_true": null
+    },
+    {
+      "gamma_kin": 32.0,
+      "beta": 0.9995115994824673,
+      "momentum_GeV_c": 3.379416700631172,
+      "tau_FPM_us": 70.02627447907822,
+      "tau_SR_us": 70.3033952,
+      "difference_us": 0.2771207209217684,
+      "direct_flight_length_FPM_km": 20.99334895066553,
+      "direct_flight_length_SR_km": 21.076427652753402,
+      "maximum_systematic_us_for_one_fifth_gap": 0.05542414418435369,
+      "ideal_events_for_5sigma_if_SR_true": 1608994.6745562397
+    },
+    {
+      "gamma_kin": 40.0,
+      "beta": 0.9996874511566103,
+      "momentum_GeV_c": 4.2250140838777215,
+      "tau_FPM_us": 70.02627447907822,
+      "tau_SR_us": 87.87924399999999,
+      "difference_us": 17.85296952092176,
+      "direct_flight_length_FPM_km": 20.99334895066553,
+      "direct_flight_length_SR_km": 26.34553456594175,
+      "maximum_systematic_us_for_one_fifth_gap": 3.570593904184352,
+      "ideal_events_for_5sigma_if_SR_true": 605.7476052572962
+    },
+    {
+      "gamma_kin": 100.0,
+      "beta": 0.9999499987499375,
+      "momentum_GeV_c": 10.565309244914545,
+      "tau_FPM_us": 70.02627447907822,
+      "tau_SR_us": 219.69810999999999,
+      "difference_us": 149.67183552092175,
+      "direct_flight_length_FPM_km": 20.99334895066553,
+      "direct_flight_length_SR_km": 65.86383641485438,
+      "maximum_systematic_us_for_one_fifth_gap": 29.93436710418435,
+      "ideal_events_for_5sigma_if_SR_true": 53.86572144272349
+    }
+  ],
+  "likelihood": {
+    "summary_data": "Gaussian log likelihood for a fitted tau_hat and declared sigma.",
+    "event_time_data": "Ideal unbinned exponential log likelihood; acceptance, background, losses, and momentum spread must be declared before use.",
+    "rejection_rule": "Reject the candidate extension when a preregistered high-gamma likelihood comparison significantly favors the uncapped SR baseline under the frozen uncertainty model."
+  },
+  "feasibility": {
+    "historical_storage_reference_gamma": 29.33,
+    "historical_reference_below_cap": true,
+    "existing_high_gamma_fit_data": false,
+    "facility_note": "The temporary FTBF reference documents 10-50 GeV/c muon-beam capability, above the cap momentum, but not a controlled decay-lifetime dataset.",
+    "measurement_requirement": "A storage ring or equivalently long time-resolved decay region is required; direct-flight lengths are listed per gamma bin."
+  },
+  "temporary_reference_downloads": {
+    "pdg_2025_muon_listing.pdf": {
+      "url": "https://pdg.lbl.gov/2025/listings/rpp2025-list-muon.pdf",
+      "status": "downloaded_temporary",
+      "bytes": 140490,
+      "sha256": "9936fec3c8d05fbe27f96430e3f9ca6ac44f38f55681d29e0ad6767d853e1b55"
+    },
+    "fermilab_conf_16_424_g2_beam.pdf": {
+      "url": "https://lss.fnal.gov/archive/2016/conf/fermilab-conf-16-424-ad.pdf",
+      "status": "downloaded_temporary",
+      "bytes": 748068,
+      "sha256": "4bfd7df7f6aa777cb8f7047acd28c9bf2a93e1ea32283bbd1e1a437c26e5e691"
+    },
+    "fermilab_tm_2627_muon_test_beam.pdf": {
+      "url": "https://lss.fnal.gov/archive/test-tm/2000/fermilab-tm-2627-e.pdf",
+      "status": "downloaded_temporary",
+      "bytes": 386688,
+      "sha256": "370054f99a916964e56b157735cdb7976a2b39eed61b0b9c37daf45d5c8ef277"
+    }
+  },
+  "reference_records": [
+    {
+      "record_id": "pdg_2025_rest_muon",
+      "kind": "rest_lifetime",
+      "gamma": 1.0,
+      "lab_lifetime_us": 2.1969811,
+      "uncertainty_us": 2.2e-06,
+      "role": "calibration",
+      "likelihood_usable": false,
+      "source_url": "https://pdg.lbl.gov/2025/listings/rpp2025-list-muon.pdf",
+      "notes": "Sets the candidate extension's rest-frame decay hazard only."
+    },
+    {
+      "record_id": "cern_storage_1977",
+      "kind": "time_dilation_reference",
+      "gamma": 29.33,
+      "lab_lifetime_us": 64.378,
+      "uncertainty_us": null,
+      "role": "below_threshold_reference",
+      "likelihood_usable": false,
+      "source_url": "https://cds.cern.ch/record/133132",
+      "notes": "Published storage-ring lifetime reference; no machine-readable decay-time series or likelihood-ready uncertainty is retrieved by this script."
+    },
+    {
+      "record_id": "ftbf_2016",
+      "kind": "beam_capability",
+      "gamma": 94.65,
+      "lab_lifetime_us": null,
+      "uncertainty_us": null,
+      "role": "facility_feasibility",
+      "likelihood_usable": false,
+      "source_url": "https://lss.fnal.gov/archive/test-tm/2000/fermilab-tm-2627-e.pdf",
+      "notes": "Documents 10-50 GeV/c muon capability, not a decay-lifetime measurement."
+    }
+  ]
+}

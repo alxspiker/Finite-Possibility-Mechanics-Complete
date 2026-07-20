@@ -131,7 +131,7 @@ def manuscript(st):
         equation("L(v<sub>lab</sub>)=min[L<sub>rest</sub>&gamma;<sub>kin</sub>(v<sub>lab</sub>),L<sub>max</sub>].", st),
         body("Together with z<sub>t+1</sub>=z<sub>t</sub>+L<sub>rest</sub>/L<sub>t</sub>, a constant decay hazard per unit z, and a rest-lifetime calibration, this gives", st),
         equation("&tau;<sub>FPM</sub>(v<sub>lab</sub>)=&tau;<sub>mu</sub> min[&gamma;<sub>kin</sub>(v<sub>lab</sub>),31.8738629].", st),
-        body("The ceiling corresponds to v<sub>*</sub>=0.9995077253c and tau<sub>max</sub>=70.0263 microseconds for the declared muon lifetime input.", st),
+        body("The ceiling corresponds to v<sub>*</sub>=0.9995077253c and tau<sub>max</sub>=70.0263 microseconds for the declared Particle Data Group rest-lifetime input [14]. The feasibility package found no machine-readable controlled lifetime series above the threshold. A documented 10-50 GeV/c muon beam capability is sufficient in momentum but is not a decay-lifetime dataset.", st),
         body("The implementation separately verifies that phase advance grows with L while progress per universal tick falls as L<sub>rest</sub>/L, with unitary uniform phase rotation leaving Born probabilities unchanged. This establishes only compatibility of the two simulator updates; it does not identify carrier phase with a decay clock.", st),
         statement("Failure condition T", "Freeze the motion dictionary, rest-lifetime calibration, observable definition, uncertainty model, and rejection threshold before high-gamma data. Reject the adopted lag extension if the selected observable continues beyond the conditional ceiling or significantly departs from the frozen capped curve. The supplied gamma=29.3 reference is below the threshold and is not discriminating.", st),
         h2("7.4 Candidate torsion-refresh test", st),
@@ -180,6 +180,7 @@ def manuscript(st):
         reference("[11] E. Tiesinga, P. J. Mohr, D. B. Newell, and B. N. Taylor, “CODATA Recommended Values of the Fundamental Physical Constants: 2018,” <i>Reviews of Modern Physics</i> 93, 025010 (2021). <a href='https://doi.org/10.1103/RevModPhys.93.025010'>https://doi.org/10.1103/RevModPhys.93.025010</a>", st),
         reference("[12] A. Spiker, <i>Finite Possibility Mechanics Complete</i>, source repository, <a href='https://github.com/alxspiker/Finite-Possibility-Mechanics-Complete'>https://github.com/alxspiker/Finite-Possibility-Mechanics-Complete</a> (accessed July 2026).", st),
         reference("[13] A. Spiker, <i>Finite Possibility Mechanics: A Unified Information-Theoretic Framework</i>, Zenodo (2026). <a href='https://doi.org/10.5281/zenodo.21352386'>https://doi.org/10.5281/zenodo.21352386</a>", st),
+        reference("[14] Particle Data Group, <i>Muon listing</i>, 2025 update. <a href='https://pdg.lbl.gov/2025/listings/rpp2025-list-muon.pdf'>https://pdg.lbl.gov/2025/listings/rpp2025-list-muon.pdf</a>", st),
     ]
     return s
 
