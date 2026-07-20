@@ -81,6 +81,9 @@ PLANCK_TT_RMS = 4.06e-5
 PLANCK_ELL_D_RANGE = (1100.0, 1500.0)
 BK18_R_UPPER = 0.09
 CERN_MUON_GAMMA = 29.3
+# External rest-lifetime calibration used only by the candidate muon-lag
+# diagnostic. It is not derived from the FPM axioms.
+MUON_REST_LIFETIME_S = 2.1969811e-6
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
@@ -1555,24 +1558,124 @@ def audit_sparc_fpm_bridge(d: DerivedConstants) -> Dict[str, Any]:
     }
 
 
-def bridge_time_dilation(d: DerivedConstants,
-                         L_values: np.ndarray) -> Dict[str, Any]:
-    """Bridge 4: time dilation as processor lag.
+def bridge_internal_lag(d: DerivedConstants,
+                        L_values: np.ndarray) -> Dict[str, Any]:
+    """Internal lag ratio and causal throughput, without a velocity dictionary.
 
-    dt(r) = (L(r)/L_rest) * dt_univ
-    v(r) = c * L_rest / L(r)
-    gamma(r) = L(r)/L_rest  bounded by gamma_max
+    ``causal_throughput_fraction`` is the inverse internal-lag ratio. It is
+    not a laboratory spatial velocity; ``v_lab`` is reserved for the separate
+    candidate motion-to-ledger extension below.
     """
     L = np.clip(L_values, d.L_rest, d.L_max)
     gamma = L / d.L_rest
-    v_eff = C_LIGHT * d.L_rest / L
+    causal_throughput = d.L_rest / L
     return {
+        "bridge_name": "Internal lag and causal throughput",
         "L_values": L.tolist(),
-        "gamma": gamma.tolist(),
-        "v_eff_m_s": v_eff.tolist(),
+        "internal_lag_ratio": gamma.tolist(),
+        "causal_throughput_fraction": causal_throughput.tolist(),
         "gamma_max": d.gamma_max,
-        "v_min_allowed_frac_c": float(d.L_rest / d.L_max),
-        "falsifiable_at_gamma": 32.0,
+        "minimum_causal_throughput_fraction": float(d.L_rest / d.L_max),
+        "physical_status": "INTERNAL_RATIO_ONLY",
+    }
+
+
+def motion_to_ledger_dictionary(d: DerivedConstants,
+                                v_lab_m_s: np.ndarray) -> Dict[str, Any]:
+    """Candidate external-motion dictionary for the muon-lag extension.
+
+    The low-load Lorentz factor is an imported kinematic dictionary, not a
+    result of Axioms A1-A5. The FPM action cap then produces the conditional
+    finite-lag curve.
+    """
+    v_lab = np.asarray(v_lab_m_s, dtype=float)
+    speed_fraction = np.abs(v_lab) / C_LIGHT
+    if np.any(speed_fraction >= 1.0):
+        raise ValueError("candidate motion-to-ledger dictionary requires |v_lab| < c")
+    gamma_kin = 1.0 / np.sqrt(1.0 - speed_fraction ** 2)
+    L_unclipped = d.L_rest * gamma_kin
+    L = np.clip(L_unclipped, d.L_rest, d.L_max)
+    gamma_fpm = L / d.L_rest
+    return {
+        "candidate_extension": "MUON_LAG_MOTION_TO_LEDGER_DICTIONARY",
+        "v_lab_m_s": v_lab.tolist(),
+        "gamma_kinematic": gamma_kin.tolist(),
+        "L_unclipped": L_unclipped.tolist(),
+        "L_capped": L.tolist(),
+        "gamma_FPM": gamma_fpm.tolist(),
+        "causal_throughput_fraction": (d.L_rest / L).tolist(),
+        "gamma_max": d.gamma_max,
+        "dictionary_formula": "L(v_lab)=min[L_rest*gamma_kin(v_lab), L_max]",
+        "physical_status": "CANDIDATE_EXTENSION",
+    }
+
+
+def candidate_muon_lag_survival_diagnostic(d: DerivedConstants) -> Dict[str, Any]:
+    """Analytic survival diagnostic for the candidate muon-lag extension.
+
+    The decay law is postulated to have a constant hazard per internal clock
+    progress. The rest lifetime fixes that hazard; only the capped high-gamma
+    shape is the prospective discriminator.
+    """
+    gamma_probe = np.array([1.0, CERN_MUON_GAMMA, d.gamma_max, 40.0, 100.0])
+    v_probe = C_LIGHT * np.sqrt(1.0 - 1.0 / gamma_probe ** 2)
+    motion = motion_to_ledger_dictionary(d, v_probe)
+    gamma_fpm = np.asarray(motion["gamma_FPM"], dtype=float)
+    lifetime_fpm = MUON_REST_LIFETIME_S * gamma_fpm
+    lifetime_sr = MUON_REST_LIFETIME_S * gamma_probe
+    survival_at_sr_mean = np.exp(-gamma_probe / gamma_fpm)
+    beta_star = math.sqrt(1.0 - 1.0 / d.gamma_max ** 2)
+    momentum_star_over_mc = math.sqrt(d.gamma_max ** 2 - 1.0)
+
+    # The route-cost phase update and the progress scheduler are deliberately
+    # independent: phase advance grows with L while progress per universal
+    # tick falls as L_rest/L. This check uses a uniform nine-channel route cost
+    # so phase unitarity and Born invariance are exact.
+    dm = DaemonState(p_L=0.5, p_R=0.5)
+    p_before = dm.born_probabilities()
+    L_probe = np.array([d.L_rest, d.L_max])
+    phase_increment = 0.37 * L_probe
+    progress_increment = d.L_rest / L_probe
+    dm.phase_rotate(np.full(9, d.L_max))
+    phase_born_delta = float(np.max(np.abs(dm.born_probabilities() - p_before)))
+    inverse_product_residual = float(np.max(np.abs(
+        phase_increment * progress_increment - 0.37 * d.L_rest
+    )))
+
+    return {
+        "audit_name": "Candidate Muon-Lag Extension",
+        "candidate_extension": "MUON_LAG_SCHEDULER_PLUS_DECAY_HAZARD",
+        "rest_lifetime_s": MUON_REST_LIFETIME_S,
+        "rest_decay_rate_per_internal_second": 1.0 / MUON_REST_LIFETIME_S,
+        "rest_decay_hazard_per_internal_tick": d.dt_univ / MUON_REST_LIFETIME_S,
+        "progress_rule": "z_(n+1)=z_n+L_rest/L_n",
+        "survival_rule": "P_survive(t|v_lab)=exp[-t/(tau_mu*gamma_FPM(v_lab))]",
+        "motion_dictionary": motion,
+        "gamma_probe": gamma_probe.tolist(),
+        "lifetime_FPM_s": lifetime_fpm.tolist(),
+        "lifetime_kinematic_baseline_s": lifetime_sr.tolist(),
+        "survival_at_kinematic_mean_lifetime": survival_at_sr_mean.tolist(),
+        "ceiling_speed_fraction_c": beta_star,
+        "ceiling_momentum_over_mc": momentum_star_over_mc,
+        "ceiling_lifetime_s": float(MUON_REST_LIFETIME_S * d.gamma_max),
+        "phase_clock_separation": {
+            "phase_increment_rule": "Delta_phi=theta*L",
+            "progress_increment_rule": "Delta_z=L_rest/L",
+            "phase_increment_increases_with_L": bool(phase_increment[1] > phase_increment[0]),
+            "progress_increment_decreases_with_L": bool(progress_increment[1] < progress_increment[0]),
+            "inverse_product_residual": inverse_product_residual,
+            "uniform_phase_born_probability_delta": phase_born_delta,
+        },
+        "historical_reference_gamma": CERN_MUON_GAMMA,
+        "historical_reference_below_ceiling": bool(CERN_MUON_GAMMA < d.gamma_max),
+        "physical_status": "CANDIDATE_EXTENSION_NOT_LEVEL_6_EVIDENCE",
+        "verdict": "PASS" if (
+            abs(gamma_fpm[0] - 1.0) < 1e-12
+            and abs(gamma_fpm[1] - CERN_MUON_GAMMA) < 1e-10
+            and abs(gamma_fpm[-1] - d.gamma_max) < 1e-12
+            and phase_born_delta < 1e-12
+            and inverse_product_residual < 1e-12
+        ) else "FAIL",
     }
 
 
@@ -3563,7 +3666,8 @@ def main() -> None:
     b_grav = bridge_gravity_galaxy(d, r_kpc)
     b_sparc = audit_sparc_fpm_bridge(d)
     L_sample = np.linspace(d.L_rest, d.L_max, 50)
-    b_time = bridge_time_dilation(d, L_sample)
+    b_time = bridge_internal_lag(d, L_sample)
+    b_muon_lag = candidate_muon_lag_survival_diagnostic(d)
     b_cmb = bridge_cmb_oscillator(d)
     L_for_born, _ = axcore_lagrangian(sample, d, sample.Omega_prev, LagrangianConfig())
     b_born = bridge_born_distribution(
@@ -3588,8 +3692,11 @@ def main() -> None:
     else:
         print("  SPARC/RAR:  empirical audit unavailable; archived benchmark metadata retained "
               "without a competitive verdict")
-    print(f"  Time dil.:  gamma range = [{b_time['gamma'][0]:.2f}, "
-          f"{b_time['gamma'][-1]:.2f}], gamma_max={b_time['gamma_max']:.2f}")
+    print(f"  Internal lag: gamma range = [{b_time['internal_lag_ratio'][0]:.2f}, "
+          f"{b_time['internal_lag_ratio'][-1]:.2f}], gamma_max={b_time['gamma_max']:.2f}")
+    print(f"  Muon lag candidate: gamma*= {d.gamma_max:.4f}, "
+          f"tau_max={b_muon_lag['ceiling_lifetime_s'] * 1e6:.4f} us, "
+          f"verdict={b_muon_lag['verdict']}")
     print(f"  CMB:        A_FPM={b_cmb['A_FPM']:.4e}, "
           f"n_s={b_cmb['n_s']:.4f}, r={b_cmb['r']:.5f}, "
           f"ell_D={b_cmb['ell_D']:.0f}")
@@ -3708,7 +3815,8 @@ def main() -> None:
             "landauer": to_serialisable(b_land),
             "gravity_galaxy": to_serialisable(b_grav),
             "sparc_fpm_repaired_gravity": to_serialisable(b_sparc),
-            "time_dilation": to_serialisable(b_time),
+            "internal_lag": to_serialisable(b_time),
+            "candidate_muon_lag_extension": to_serialisable(b_muon_lag),
             "cmb_oscillator": {
                 "A_FPM": b_cmb["A_FPM"],
                 "n_s": b_cmb["n_s"],
