@@ -9,16 +9,19 @@ likelihood, and beam/precision requirements for gamma bins spanning the cap.
 from __future__ import annotations
 
 import hashlib
+import argparse
+import csv
 import json
 import math
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 
 
 PROJECT = Path(__file__).resolve().parents[1]
 OUTPUT = PROJECT / "outputs" / "muon_lag_protocol_predictions.json"
+DEFAULT_LIKELIHOOD_OUTPUT = PROJECT / "outputs" / "muon_lag_likelihood_report.json"
 
 C_LIGHT_M_S = 299_792_458.0
 MUON_MASS_MEV_C2 = 105.6583755
@@ -116,6 +119,122 @@ def exponential_log_likelihood(decay_times_s: Iterable[float], tau_model_s: floa
     return -len(times) * math.log(tau_model_s) - sum(times) / tau_model_s
 
 
+def _read_required_float(row: dict[str, str], field: str, row_number: int) -> float:
+    try:
+        value = float(row[field])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(f"row {row_number}: {field} must be a finite number") from exc
+    if not math.isfinite(value):
+        raise ValueError(f"row {row_number}: {field} must be finite")
+    return value
+
+
+def _read_csv_rows(path: Path, required_fields: set[str]) -> list[dict[str, str]]:
+    with path.open(newline="", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        found = set(reader.fieldnames or [])
+        missing = required_fields - found
+        if missing:
+            raise ValueError(f"{path}: missing required columns: {', '.join(sorted(missing))}")
+        rows = list(reader)
+    if not rows:
+        raise ValueError(f"{path}: no data rows")
+    return rows
+
+
+def summary_likelihood_report(path: Path) -> dict[str, Any]:
+    """Evaluate the frozen Gaussian likelihood on a fitted-lifetime CSV.
+
+    Required columns are ``gamma_kin``, ``tau_hat_s``, and ``sigma_s``.  Each
+    row must be a separately fitted lifetime with its uncertainty; accepted
+    events, background model, momentum distribution, and timing calibration
+    belong to the experiment's preregistered fit that produced the row.
+    """
+    rows = _read_csv_rows(path, {"gamma_kin", "tau_hat_s", "sigma_s"})
+    fpm_log_likelihood = 0.0
+    sr_log_likelihood = 0.0
+    parsed: list[dict[str, float]] = []
+    for number, row in enumerate(rows, start=2):
+        gamma = _read_required_float(row, "gamma_kin", number)
+        tau_hat = _read_required_float(row, "tau_hat_s", number)
+        sigma = _read_required_float(row, "sigma_s", number)
+        if gamma < 1.0 or tau_hat <= 0.0 or sigma <= 0.0:
+            raise ValueError(f"row {number}: gamma, tau_hat_s, and sigma_s must be positive")
+        ll_fpm = gaussian_log_likelihood(tau_hat, sigma, tau_fpm_s(gamma))
+        ll_sr = gaussian_log_likelihood(tau_hat, sigma, tau_sr_s(gamma))
+        fpm_log_likelihood += ll_fpm
+        sr_log_likelihood += ll_sr
+        parsed.append({
+            "gamma_kin": gamma,
+            "tau_hat_s": tau_hat,
+            "sigma_s": sigma,
+            "tau_FPM_s": tau_fpm_s(gamma),
+            "tau_SR_s": tau_sr_s(gamma),
+        })
+    return {
+        "input_kind": "fitted_lifetime_summary",
+        "input_path": str(path),
+        "rows": parsed,
+        "log_likelihood_FPM": fpm_log_likelihood,
+        "log_likelihood_SR": sr_log_likelihood,
+    }
+
+
+def event_likelihood_report(path: Path) -> dict[str, Any]:
+    """Evaluate the ideal unbinned exponential likelihood on an event CSV.
+
+    Required columns are ``gamma_kin`` and ``decay_time_s``.  This is only
+    valid for an already background-subtracted, acceptance-corrected event
+    sample with a declared momentum-resolution model.
+    """
+    rows = _read_csv_rows(path, {"gamma_kin", "decay_time_s"})
+    fpm_log_likelihood = 0.0
+    sr_log_likelihood = 0.0
+    high_gamma_events = 0
+    for number, row in enumerate(rows, start=2):
+        gamma = _read_required_float(row, "gamma_kin", number)
+        decay_time = _read_required_float(row, "decay_time_s", number)
+        if gamma < 1.0 or decay_time < 0.0:
+            raise ValueError(f"row {number}: gamma_kin must be >= 1 and decay_time_s >= 0")
+        fpm_log_likelihood += exponential_log_likelihood([decay_time], tau_fpm_s(gamma))
+        sr_log_likelihood += exponential_log_likelihood([decay_time], tau_sr_s(gamma))
+        high_gamma_events += int(gamma > GAMMA_CAP)
+    return {
+        "input_kind": "acceptance_corrected_decay_events",
+        "input_path": str(path),
+        "event_count": len(rows),
+        "events_above_gamma_cap": high_gamma_events,
+        "log_likelihood_FPM": fpm_log_likelihood,
+        "log_likelihood_SR": sr_log_likelihood,
+    }
+
+
+def finalize_likelihood_report(report: dict[str, Any]) -> dict[str, Any]:
+    """Attach the frozen comparison statistic and rejection rule."""
+    statistic = 2.0 * (report["log_likelihood_SR"] - report["log_likelihood_FPM"])
+    report.update({
+        "candidate_extension": "MUON_LAG_SCHEDULER_PLUS_DECAY_HAZARD",
+        "frozen_model": {
+            "fpm_curve": "tau_FPM=tau_mu*min(gamma_kin, gamma_cap)",
+            "sr_baseline": "tau_SR=tau_mu*gamma_kin",
+            "gamma_cap": GAMMA_CAP,
+            "rest_lifetime_s": MUON_REST_LIFETIME_S,
+        },
+        "comparison_statistic": "2*(lnL_SR-lnL_FPM)",
+        "comparison_value": statistic,
+        "rejection_rule": (
+            "Reject the candidate extension if 2*(lnL_SR-lnL_FPM) >= 25 "
+            "in a preregistered high-gamma analysis using the declared likelihood."
+        ),
+        "rejection_rule_met": statistic >= 25.0,
+        "scope_warning": (
+            "This statistic is not a discovery significance by itself. The experiment must "
+            "preregister acceptance, backgrounds, losses, momentum spread, and calibration."
+        ),
+    })
+    return report
+
+
 def required_events_for_five_sigma(gamma: float) -> float | None:
     """Ideal exponential-MLE count for a 5-sigma separation if SR is true.
 
@@ -178,6 +297,27 @@ def protocol_rows() -> list[dict[str, float | int | None]]:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    input_group = parser.add_mutually_exclusive_group()
+    input_group.add_argument("--summary-csv", type=Path,
+                             help="Fitted-lifetime CSV: gamma_kin,tau_hat_s,sigma_s")
+    input_group.add_argument("--events-csv", type=Path,
+                             help="Corrected event CSV: gamma_kin,decay_time_s")
+    parser.add_argument("--likelihood-output", type=Path,
+                        default=DEFAULT_LIKELIHOOD_OUTPUT,
+                        help="Where to write an input-data likelihood report")
+    args = parser.parse_args()
+
+    if args.summary_csv or args.events_csv:
+        report = (summary_likelihood_report(args.summary_csv) if args.summary_csv
+                  else event_likelihood_report(args.events_csv))
+        report = finalize_likelihood_report(report)
+        args.likelihood_output.parent.mkdir(parents=True, exist_ok=True)
+        args.likelihood_output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        print(args.likelihood_output)
+        print(f"2*(lnL_SR-lnL_FPM): {report['comparison_value']:.6f}")
+        return
+
     cap_beta = gamma_to_beta(GAMMA_CAP)
     with tempfile.TemporaryDirectory(prefix="fpm_muon_lag_") as temp_dir:
         downloads = download_references(Path(temp_dir))

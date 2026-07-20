@@ -1,0 +1,61 @@
+{
+  "audit_name": "Verified temporary SPARC scalar bridge audit",
+  "evidence_status": "REPRODUCIBLE_RETROSPECTIVE_SCALAR_BENCHMARK",
+  "scope": "This is an externally recoverable scalar rotation-curve benchmark. It is not a tensor-galaxy morphology prediction, a fitted model, or prospective evidence.",
+  "data_policy": "Zenodo source files were downloaded into a temporary directory and deleted after this run.",
+  "source": {
+    "record_doi": "10.5281/zenodo.16284118",
+    "record_url": "https://zenodo.org/records/16284118",
+    "retrieved_utc": "2026-07-20T03:56:21.341261+00:00",
+    "files": {
+      "SPARC_Lelli2016c.mrt": {
+        "url": "https://zenodo.org/api/records/16284118/files/SPARC_Lelli2016c.mrt/content",
+        "expected_md5": "6181df386bfc05868a3700c196e800da",
+        "actual_md5": "6181df386bfc05868a3700c196e800da",
+        "expected_bytes": 28259,
+        "actual_bytes": 28259,
+        "verified": true
+      },
+      "Rotmod_LTG.zip": {
+        "url": "https://zenodo.org/api/records/16284118/files/Rotmod_LTG.zip/content",
+        "expected_md5": "e4c8b92766026770ed35e5889064e12b",
+        "actual_md5": "e4c8b92766026770ed35e5889064e12b",
+        "expected_bytes": 110737,
+        "actual_bytes": 110737,
+        "verified": true
+      }
+    }
+  },
+  "frozen_ledger": {
+    "parameter_fit": false,
+    "sample": "Q=1 galaxies with at least five valid rotation-curve rows",
+    "baryonic_velocity_composition": "v_gas^2 + 0.5*v_disk^2 + 0.7*v_bulge^2",
+    "fpm_susceptibility": "nu_FPM(x)=1+Omega_max/sqrt(x+r_tensor)/(1+E_zombie*x^2)^beta",
+    "comparison_baseline": "nu_RAR(x)=1/(1-exp(-sqrt(x)))",
+    "summary_metric": "median per-galaxy RMSE in km/s"
+  },
+  "result": {
+    "available": true,
+    "galaxies_Q1": 99,
+    "rmse_legacy_single_source_km_s": 23.94,
+    "rmse_split_source_km_s": 13.65,
+    "rmse_FPM_repaired_km_s": 11.870977206417242,
+    "rmse_FPM_gas_boundary_km_s": 11.606451389609047,
+    "rmse_RAR_MOND_km_s": 11.715622173330427,
+    "FPM_wins_vs_RAR_MOND": 48,
+    "FPM_gas_boundary_wins_vs_RAR_MOND": 50,
+    "late_type_T_ge_7_rmse_FPM_km_s": 8.900141551564177,
+    "late_type_T_ge_7_rmse_FPM_gas_boundary_km_s": 8.907200211011975,
+    "late_type_T_ge_7_rmse_RAR_MOND_km_s": 8.884145257555357,
+    "early_type_T_le_4_rmse_FPM_km_s": 25.63214405426983,
+    "early_type_T_le_4_rmse_FPM_gas_boundary_km_s": 25.486788107010387,
+    "early_type_T_le_4_rmse_RAR_MOND_km_s": 25.98004575156327,
+    "susceptibility_formula": "nu_FPM(x)=1+Omega_max/sqrt(x+r_tensor)/(1+E_zombie*x^2)^beta",
+    "gas_boundary_formula": "nu_total=nu_FPM(x)-alpha*f_gas/(1+x)",
+    "gas_boundary_derivation": "Diffuse gas is treated as a low-acceleration boundary reservoir; the trace fraction alpha is the zero-fit coherent-route subtraction and 1/(1+x) switches it off in compact high-action regions.",
+    "x_squared_derivation": "x is a vector acceleration amplitude; scalar ledger load is the invariant field-energy density x dot x = x^2.",
+    "E_zombie": 0.13333333333333333,
+    "low_acceleration_exponent": -0.5,
+    "data_dir_policy": "verified_temporary_directory_deleted_after_run"
+  }
+}

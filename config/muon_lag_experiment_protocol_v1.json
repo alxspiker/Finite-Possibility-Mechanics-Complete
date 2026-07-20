@@ -1,0 +1,37 @@
+{
+  "protocol_name": "Candidate Muon-Lag Extension: pre-data test protocol",
+  "version": "1.0",
+  "status": "EXPERIMENTAL_PROTOCOL_NOT_EVIDENCE",
+  "model": {
+    "motion_dictionary": "L(v_lab) = min[L_rest * gamma_kin(v_lab), L_max]",
+    "fpm_curve": "tau_FPM(gamma_kin) = tau_mu * min(gamma_kin, gamma_cap)",
+    "sr_baseline": "tau_SR(gamma_kin) = tau_mu * gamma_kin",
+    "gamma_cap": 31.873862947240752,
+    "muon_rest_lifetime_s": 2.1969811e-06,
+    "muon_mass_MeV_c2": 105.6583755
+  },
+  "gamma_bins": [20.0, 29.3, 32.0, 40.0, 100.0],
+  "observable": "A fitted muon decay lifetime in each gamma bin, obtained from a declared time-resolved decay sample.",
+  "required_preregistration": [
+    "Momentum reconstruction and bin-assignment procedure",
+    "Timing calibration and resolution model",
+    "Decay acceptance, detector efficiency, backgrounds, and beam-loss model",
+    "Likelihood choice, nuisance parameters, and their constraints",
+    "Treatment of momentum spread and correlations",
+    "Blind or held-out decision procedure"
+  ],
+  "likelihood": {
+    "summary_input_columns": ["gamma_kin", "tau_hat_s", "sigma_s"],
+    "event_input_columns": ["gamma_kin", "decay_time_s"],
+    "summary_model": "Independent Gaussian likelihood for preregistered fitted lifetime estimates.",
+    "event_model": "Ideal exponential lifetime likelihood only after background and acceptance correction.",
+    "comparison_statistic": "2 * (ln L_SR - ln L_FPM)",
+    "candidate_rejection_threshold": 25.0,
+    "rejection_condition": "Reject this candidate extension if the preregistered high-gamma analysis gives 2*(ln L_SR-ln L_FPM) >= 25 under the declared uncertainty model."
+  },
+  "scope": {
+    "historical_below_cap_reference_gamma": 29.33,
+    "physical_evidence_status": "No high-gamma, likelihood-ready public decay-lifetime series is bundled with this protocol.",
+    "interpretation": "The protocol is a conditional test of the candidate motion-to-ledger and decay-hazard extension, not a test of Axioms A1-A5 alone."
+  }
+}

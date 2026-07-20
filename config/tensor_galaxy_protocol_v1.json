@@ -1,0 +1,19 @@
+{
+  "protocol_name": "Tensor-galaxy morphology candidate protocol",
+  "version": "1.0",
+  "status": "NOT_IMPLEMENTED_NO_TENSOR_OBSERVABLE",
+  "boundary": "The current simulator supplies a scalar susceptibility rotation-curve audit only. It does not supply a tensor field, a mapping from that field to an observed two-dimensional galaxy quantity, or a tensor likelihood.",
+  "recoverable_public_source": {
+    "name": "SPARC Galaxy Rotation Curve database",
+    "doi": "10.5281/zenodo.16284118",
+    "role": "Scalar rotation-curve benchmark only; it cannot by itself validate a tensor-morphology prediction."
+  },
+  "required_before_prediction": [
+    "Define the FPM tensor quantity and its units or dimensionless normalization.",
+    "Define a single physical observable that is linearly or nonlinearly mapped from that tensor.",
+    "Choose a public two-dimensional data product with a stable identifier and preserve its orientation, point-spread function, masks, and covariance.",
+    "Freeze a galaxy-selection rule and a train/calibration versus held-out split before fitting any orientation or source parameters.",
+    "Publish the prediction map, likelihood, baseline model, nuisance parameters, and rejection criterion before inspecting the held-out maps."
+  ],
+  "prohibited_interpretation": "Do not call a scalar SPARC RMSE result a tensor-galaxy result."
+}
