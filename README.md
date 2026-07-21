@@ -1,3 +1,5 @@
+> **STATUS (2026): The central claims of this project — a parameter-free derivation of physical constants from finite-information axioms — do not hold. All constants trace to a single calibrated input (the electron mass); the key derivations are circular or coincidental, and a pre-registered test of the core mechanism failed. See [RETRACTION.md](./RETRACTION.md). What remains valid is a self-consistent discrete-mechanics simulator with exact conservation bookkeeping, retained as a sandbox.**
+
 # FPM — The Complete Unified Paper
 
 **Author:** Alx Spiker · Edmonton, Alberta, Canada
